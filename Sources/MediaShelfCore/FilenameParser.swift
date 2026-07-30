@@ -22,6 +22,10 @@ public struct FilenameParser: Sendable {
         pattern: #"(?<!\d)(19\d{2}|20\d{2})(?!\d)"#
     )
 
+    private let seasonOnlyPattern = try! NSRegularExpression(
+        pattern: #"(?i)^(.*?)[\s._-]+(?:(19\d{2}|20\d{2})[\s._-]+)?S(\d{1,2})(?:[\s._-]+(.*))?$"#
+    )
+
     public init() {}
 
     public func parse(url: URL) -> ParsedFilename {
@@ -55,6 +59,32 @@ public struct FilenameParser: Sendable {
                 seasonNumber: season,
                 episodeNumber: episode,
                 episodeTitle: episodeTitle
+            )
+        }
+
+        let seasonRange = NSRange(base.startIndex..<base.endIndex, in: base)
+        if let match = seasonOnlyPattern.firstMatch(in: base, range: seasonRange),
+           let seriesRange = Range(match.range(at: 1), in: base),
+           let numberRange = Range(match.range(at: 3), in: base) {
+            let series = cleanTitle(String(base[seriesRange]))
+            let year: Int?
+            if match.range(at: 2).location != NSNotFound,
+               let yearRange = Range(match.range(at: 2), in: base) {
+                year = Int(base[yearRange])
+            } else {
+                year = nil
+            }
+            var title: String?
+            if match.range(at: 4).location != NSNotFound,
+               let titleRange = Range(match.range(at: 4), in: base) {
+                title = cleanTitle(String(base[titleRange])).nonEmpty
+            }
+            return ParsedFilename(
+                kind: .episode,
+                title: series,
+                year: year,
+                seasonNumber: Int(base[numberRange]),
+                episodeTitle: title
             )
         }
 

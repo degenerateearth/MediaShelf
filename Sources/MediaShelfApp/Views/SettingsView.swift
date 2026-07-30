@@ -82,7 +82,7 @@ struct SettingsView: View {
                         )
                         .foregroundStyle(controller.isConnected ? ShelfTheme.accent : .secondary)
                     }
-                    Text("D-pad or left stick navigates, A selects, B goes back, X toggles play/pause, and Menu opens controls.")
+                    Text("D-pad or left stick navigates, A selects, B opens or closes the sidebar (and goes back from details), X toggles play/pause, and Menu opens controls.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

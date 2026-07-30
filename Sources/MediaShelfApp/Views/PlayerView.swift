@@ -10,6 +10,7 @@ final class PlayerSession: ObservableObject {
     @Published var duration: Double = 0
     @Published var isPlaying = false
     @Published var errorMessage: String?
+    @Published var didReachEnd = false
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
 
@@ -40,6 +41,7 @@ final class PlayerSession: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.isPlaying = false
+                self?.didReachEnd = true
             }
         }
     }
@@ -117,6 +119,21 @@ struct PlayerView: View {
                 saveProgress()
             }
         }
+        .onChange(of: session.didReachEnd) { didReachEnd in
+            guard didReachEnd else { return }
+            let completedDuration = session.duration > 0 ? session.duration : session.currentTime
+            Task {
+                await appState.saveProgress(
+                    item,
+                    position: completedDuration,
+                    duration: completedDuration > 0 ? completedDuration : nil
+                )
+            }
+            if appState.nextEpisode(after: item) != nil {
+                dismiss()
+                appState.playNextEpisode(after: item)
+            }
+        }
         .onChange(of: controller.lastAction) { action in
             guard let action else { return }
             switch action {
@@ -147,7 +164,7 @@ struct PlayerView: View {
                     Text(item.displayTitle)
                         .font(.title2.bold())
                     if item.kind == .episode {
-                        Text("S\(item.seasonNumber ?? 0) E\(item.episodeNumber ?? 0) • \(item.effectiveEpisodeTitle)")
+                        Text("\(item.episodeCode) • \(item.effectiveEpisodeTitle)")
                             .foregroundStyle(Color.white.opacity(0.72))
                     }
                 }

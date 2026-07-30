@@ -34,6 +34,11 @@ The current suite covers:
 - Disconnect a selected external drive and confirm a graceful unavailable state.
 - Reconnect at a changed mount point and refresh.
 - Pair an Xbox controller and test D-pad/stick, A, B, X, and Menu.
+- Confirm the sidebar starts closed and B toggles it.
+- Confirm TV filters show one card per series and season-pack filenames do not
+  appear under Movies.
+- Finish an episode and confirm the next ordered episode starts automatically.
+- Confirm home rail order: Continue Watching, Movies, TV Shows, then genres.
 - Disable automatic artwork, disconnect networking, and verify all core flows.
 - Move the app and `MediaShelf Data` together to a second Intel Mac.
 

@@ -322,6 +322,39 @@ public actor LibraryDatabase {
         try stepDone(statement)
     }
 
+    public func reclassify(mediaID: String, parsed: ParsedFilename) throws {
+        let statement = try prepare("""
+        UPDATE media_items SET
+            kind = ?,
+            parsed_title = ?,
+            display_title = CASE
+                WHEN manual_metadata = 1 THEN display_title
+                ELSE ?
+            END,
+            year = CASE
+                WHEN manual_metadata = 1 THEN year
+                ELSE ?
+            END,
+            season_number = ?,
+            episode_number = ?,
+            episode_title = CASE
+                WHEN manual_metadata = 1 THEN episode_title
+                ELSE ?
+            END
+        WHERE id = ?
+        """)
+        defer { sqlite3_finalize(statement) }
+        bind(parsed.kind.rawValue, to: 1, in: statement)
+        bind(parsed.title, to: 2, in: statement)
+        bind(parsed.title, to: 3, in: statement)
+        bind(parsed.year, to: 4, in: statement)
+        bind(parsed.seasonNumber, to: 5, in: statement)
+        bind(parsed.episodeNumber, to: 6, in: statement)
+        bind(parsed.episodeTitle, to: 7, in: statement)
+        bind(mediaID, to: 8, in: statement)
+        try stepDone(statement)
+    }
+
     public func setArtwork(mediaID: String, role: ArtworkRole, path: String?, manual: Bool) throws {
         let column: String
         let flag: String

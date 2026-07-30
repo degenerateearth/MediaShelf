@@ -127,7 +127,7 @@ struct PosterCard: View {
             return "TV Series"
         }
         if item.kind == .episode {
-            return "S\(String(format: "%02d", item.seasonNumber ?? 0)) E\(String(format: "%02d", item.episodeNumber ?? 0))"
+            return item.episodeCode
         }
         return item.year.map(String.init) ?? "Movie"
     }

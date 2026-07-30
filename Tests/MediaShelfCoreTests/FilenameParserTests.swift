@@ -42,4 +42,15 @@ final class FilenameParserTests: XCTestCase {
         XCTAssertEqual(result.seasonNumber, 1)
         XCTAssertEqual(result.episodeNumber, 3)
     }
+
+    func testSeasonPackIsTelevisionRatherThanMovie() {
+        let result = parser.parse(
+            filename: "Ed, Edd N Eddy-1999-S06 1080p RE 10bit EAC3 2 0 x265-iVy"
+        )
+        XCTAssertEqual(result.kind, .episode)
+        XCTAssertEqual(result.title, "Ed, Edd N Eddy")
+        XCTAssertEqual(result.year, 1999)
+        XCTAssertEqual(result.seasonNumber, 6)
+        XCTAssertNil(result.episodeNumber)
+    }
 }

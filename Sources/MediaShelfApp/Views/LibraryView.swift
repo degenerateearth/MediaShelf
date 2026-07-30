@@ -6,13 +6,16 @@ struct LibraryShellView: View {
     @ObservedObject var controller: ControllerManager
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $appState.sidebarVisibility) {
             sidebar
                 .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
             LibraryHomeView(appState: appState, controller: controller)
         }
         .tint(ShelfTheme.accent)
+        .onChange(of: appState.selectedFilter) { _ in
+            appState.sidebarVisibility = .detailOnly
+        }
     }
 
     private var sidebar: some View {
@@ -95,14 +98,6 @@ struct LibraryHomeView: View {
                                 appState: appState
                             )
                         }
-                        if !appState.recentlyAdded.isEmpty {
-                            MediaShelfRow(
-                                title: "Recently Added",
-                                items: appState.recentlyAdded,
-                                episodesAreSeries: true,
-                                appState: appState
-                            )
-                        }
                         if !appState.movies.isEmpty {
                             MediaShelfRow(
                                 title: "Movies",
@@ -114,6 +109,22 @@ struct LibraryHomeView: View {
                             MediaShelfRow(
                                 title: "TV Shows",
                                 items: appState.series.compactMap(\.representative),
+                                episodesAreSeries: true,
+                                appState: appState
+                            )
+                        }
+                        ForEach(appState.genreShelves) { shelf in
+                            MediaShelfRow(
+                                title: shelf.name,
+                                items: shelf.items,
+                                episodesAreSeries: true,
+                                appState: appState
+                            )
+                        }
+                        if !appState.recentlyAdded.isEmpty {
+                            MediaShelfRow(
+                                title: "Recently Added",
+                                items: appState.recentlyAdded,
                                 episodesAreSeries: true,
                                 appState: appState
                             )

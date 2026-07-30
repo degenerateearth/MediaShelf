@@ -13,6 +13,7 @@ or mandatory internet connection.
 - Movie and `S01E01` / `1x01` television filename parsing.
 - TV show, season, and episode grouping.
 - One card per TV series; seasons and episodes live inside the series page.
+- Continue Watching, Movies, TV Shows, and automatic genre rails in that order.
 - Streaming-style home, details, search, sort, and filter interfaces.
 - Continue Watching, watched state, recently added, and favorites.
 - Manual metadata editing that survives rescans.
@@ -21,7 +22,9 @@ or mandatory internet connection.
   exact normalized title, exact year when known, and no guessing on ambiguity.
 - Manual artwork always has priority and is never overwritten.
 - Native playback, resume, frequent progress saves, and a configurable 90% watched threshold.
-- Xbox controller navigation through Apple's GameController framework.
+- Xbox controller navigation through Apple's GameController framework, with the
+  sidebar hidden by default and available from the B button.
+- Automatic next-episode playback when a TV episode finishes.
 - Portable database backups before schema migration.
 - No media rename, move, rewrite, or deletion paths.
 

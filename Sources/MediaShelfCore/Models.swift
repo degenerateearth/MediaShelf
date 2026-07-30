@@ -143,7 +143,16 @@ public struct MediaItem: Identifiable, Codable, Hashable, Sendable {
     public var isAvailable: Bool
 
     public var effectiveEpisodeTitle: String {
-        episodeTitle?.nonEmpty ?? "Episode \(episodeNumber ?? 0)"
+        if let title = episodeTitle?.nonEmpty { return title }
+        if let episodeNumber { return "Episode \(episodeNumber)" }
+        return "Season \(seasonNumber ?? 0) Video"
+    }
+
+    public var episodeCode: String {
+        if let episodeNumber {
+            return "S\(String(format: "%02d", seasonNumber ?? 0)) E\(String(format: "%02d", episodeNumber))"
+        }
+        return "Season \(seasonNumber ?? 0)"
     }
 
     public var progressFraction: Double {

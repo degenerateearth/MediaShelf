@@ -52,6 +52,17 @@ Scanner upserts use conditional SQL to preserve manual metadata and manual
 poster/backdrop fields. Provider enrichment only fills missing, non-manual
 values.
 
+### TV is projected as series-first
+
+Library surfaces deduplicate episodes into one series card. The series detail
+screen owns season and episode selection. Specific episodes appear only where
+their identity matters, such as Continue Watching and playback.
+
+### Home rails are deterministic
+
+The home screen orders rails as Continue Watching, Movies, TV Shows, then
+metadata-derived genre shelves. Recently Added follows those primary rails.
+
 ### Expensive work does not block startup
 
 Startup opens the persisted database immediately. Scans and artwork matching run

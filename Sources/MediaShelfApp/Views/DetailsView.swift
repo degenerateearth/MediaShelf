@@ -124,7 +124,7 @@ struct DetailsView: View {
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                         .lineLimit(2)
                     if item.kind == .episode {
-                        Text("S\(item.seasonNumber ?? 0) E\(item.episodeNumber ?? 0) • \(item.effectiveEpisodeTitle)")
+                        Text("\(item.episodeCode) • \(item.effectiveEpisodeTitle)")
                             .font(.title3.weight(.semibold))
                             .foregroundStyle(ShelfTheme.accent)
                     }
@@ -250,7 +250,7 @@ private struct EpisodeRow: View {
                 .frame(width: 190, height: 106)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("\(item.episodeNumber ?? 0). \(item.effectiveEpisodeTitle)")
+                    Text(episodeTitle)
                         .font(.headline)
                     Text(item.summary ?? item.filename)
                         .font(.subheadline)
@@ -277,6 +277,13 @@ private struct EpisodeRow: View {
         }
         .buttonStyle(.plain)
         .focusable()
+    }
+
+    private var episodeTitle: String {
+        if let number = item.episodeNumber {
+            return "\(number). \(item.effectiveEpisodeTitle)"
+        }
+        return item.effectiveEpisodeTitle
     }
 }
 

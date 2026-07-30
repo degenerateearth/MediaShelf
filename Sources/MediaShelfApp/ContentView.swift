@@ -56,8 +56,14 @@ struct ContentView: View {
                 appState.showsSettings.toggle()
                 controller.consume()
             }
-            if action == .back && appState.selectedItem != nil {
-                appState.selectedItem = nil
+            if action == .back && appState.playingItem == nil {
+                if appState.selectedItem != nil {
+                    appState.selectedItem = nil
+                } else if appState.showsSettings {
+                    appState.showsSettings = false
+                } else {
+                    appState.toggleSidebar()
+                }
                 controller.consume()
             }
         }

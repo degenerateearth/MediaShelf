@@ -1,7 +1,14 @@
 import AppKit
 import Foundation
 import MediaShelfCore
+import SwiftUI
 import UniformTypeIdentifiers
+
+struct GenreShelf: Identifiable {
+    let name: String
+    let items: [MediaItem]
+    var id: String { name.lowercased() }
+}
 
 @MainActor
 final class AppState: ObservableObject {
@@ -25,6 +32,7 @@ final class AppState: ObservableObject {
     @Published var playingItem: MediaItem?
     @Published var showsSettings = false
     @Published var automaticArtwork = true
+    @Published var sidebarVisibility: NavigationSplitViewVisibility = .detailOnly
 
     init(
         paths: PortablePaths = .init(),
@@ -71,6 +79,31 @@ final class AppState: ObservableObject {
                 .sorted { $0.dateAdded > $1.dateAdded }
                 .prefix(20)
         )
+    }
+
+    var genreShelves: [GenreShelf] {
+        var grouped: [String: (name: String, items: [MediaItem])] = [:]
+        let cards = media.filter { $0.kind == .movie } + series.compactMap(\.representative)
+        for item in cards {
+            let genres = (item.genre ?? "")
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            for genre in genres {
+                let key = genre.folding(
+                    options: [.caseInsensitive, .diacriticInsensitive],
+                    locale: .current
+                ).lowercased()
+                var entry = grouped[key] ?? (genre, [])
+                if !entry.items.contains(where: { $0.id == item.id }) {
+                    entry.items.append(item)
+                }
+                grouped[key] = entry
+            }
+        }
+        return grouped.values
+            .map { GenreShelf(name: $0.name, items: sorted($0.items)) }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     var filteredCards: [MediaItem] {
@@ -138,7 +171,14 @@ final class AppState: ObservableObject {
                 try await database.setSetting("artwork_matcher_version", value: "strict-v2")
             }
             try await reload()
-            if automaticArtwork && matcherVersion != "strict-v2" {
+            let parserVersion = try await database.setting("filename_parser_version")
+            if parserVersion != "season-v2" {
+                await repairMediaClassifications()
+                try await database.setSetting("filename_parser_version", value: "season-v2")
+                try await reload()
+            }
+            if automaticArtwork &&
+                (matcherVersion != "strict-v2" || parserVersion != "season-v2") {
                 startArtworkEnrichment()
             }
         } catch {
@@ -356,6 +396,40 @@ final class AppState: ObservableObject {
         media = try await database.allMedia()
     }
 
+    func toggleSidebar() {
+        sidebarVisibility = sidebarVisibility == .detailOnly ? .all : .detailOnly
+    }
+
+    func nextEpisode(after item: MediaItem) -> MediaItem? {
+        guard item.kind == .episode, item.episodeNumber != nil else { return nil }
+        let episodes = media
+            .filter {
+                $0.kind == .episode &&
+                $0.episodeNumber != nil &&
+                $0.displayTitle.caseInsensitiveCompare(item.displayTitle) == .orderedSame
+            }
+            .sorted {
+                ($0.seasonNumber ?? 0, $0.episodeNumber ?? 0) <
+                ($1.seasonNumber ?? 0, $1.episodeNumber ?? 0)
+            }
+        guard let index = episodes.firstIndex(where: { $0.id == item.id }),
+              episodes.indices.contains(index + 1)
+        else { return nil }
+        return episodes[index + 1]
+    }
+
+    func playNextEpisode(after item: MediaItem) {
+        guard let next = nextEpisode(after: item) else {
+            playingItem = nil
+            return
+        }
+        playingItem = nil
+        Task {
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            playingItem = next
+        }
+    }
+
     private func sorted(_ input: [MediaItem]) -> [MediaItem] {
         switch selectedSort {
         case .title:
@@ -371,6 +445,47 @@ final class AppState: ObservableObject {
             }
         case .year:
             return input.sorted { ($0.year ?? 0) > ($1.year ?? 0) }
+        }
+    }
+
+    private func repairMediaClassifications() async {
+        let parser = FilenameParser()
+        for item in media {
+            let parsed = parser.parse(url: item.mediaURL)
+            let changed = parsed.kind != item.kind ||
+                parsed.title != item.parsedTitle ||
+                parsed.seasonNumber != item.seasonNumber ||
+                parsed.episodeNumber != item.episodeNumber
+            guard changed else { continue }
+            do {
+                try await database.reclassify(mediaID: item.id, parsed: parsed)
+                if parsed.kind != item.kind {
+                    if let poster = item.posterPath,
+                       !item.manualPoster,
+                       poster.hasPrefix(paths.artwork.path) {
+                        try? FileManager.default.removeItem(atPath: poster)
+                        try await database.setArtwork(
+                            mediaID: item.id,
+                            role: .poster,
+                            path: nil,
+                            manual: false
+                        )
+                    }
+                    if let backdrop = item.backdropPath,
+                       !item.manualBackdrop,
+                       backdrop.hasPrefix(paths.artwork.path) {
+                        try? FileManager.default.removeItem(atPath: backdrop)
+                        try await database.setArtwork(
+                            mediaID: item.id,
+                            role: .backdrop,
+                            path: nil,
+                            manual: false
+                        )
+                    }
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
