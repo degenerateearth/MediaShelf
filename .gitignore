@@ -1,0 +1,17 @@
+.build/
+.swiftpm/
+dist/
+MediaShelf Data/
+DerivedData/
+*.xcuserstate
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+Test Media/**/*.mp4
+Test Media/**/*.mkv
+Test Media/**/*.m4v
+Test Media/**/*.mov
+screenshots/*.png
+work/
+work-*.png
+.DS_Store
