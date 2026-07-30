@@ -82,18 +82,14 @@ struct SettingsView: View {
                         )
                         .foregroundStyle(controller.isConnected ? ShelfTheme.accent : .secondary)
                     }
-                    Text("D-pad or left stick navigates, A selects, B opens or closes the sidebar (and goes back from details), X toggles play/pause, and Menu opens controls.")
+                    Text("D-pad or left stick navigates, A selects, B opens or closes the sidebar (and goes back from details), X toggles play/pause, and holding LT or RT rewinds or fast-forwards.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Section("Playback") {
-                    LabeledContent("Native backend", value: "AVFoundation")
-                    LabeledContent("Wide-codec backend") {
-                        Text("libmpv adapter prepared")
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("MP4, M4V, and MOV use the native player. MKV and advanced audio/subtitle combinations require the redistributable Intel libmpv bundle described in docs/PLAYBACK.md.")
+                    LabeledContent("Playback engine", value: "KSPlayer + FFmpeg")
+                    Text("Includes wide codec support for MKV, MP4, advanced audio formats, and embedded subtitles.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

@@ -9,14 +9,34 @@ let package = Package(
         .library(name: "MediaShelfCore", targets: ["MediaShelfCore"]),
         .executable(name: "MediaShelf", targets: ["MediaShelfApp"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/kingslay/FFmpegKit.git", exact: "6.1.4")
+    ],
     targets: [
+        .target(
+            name: "DisplayCriteria",
+            path: "Vendor/KSPlayer/DisplayCriteria",
+            publicHeadersPath: "include"
+        ),
+        .target(
+            name: "KSPlayer",
+            dependencies: [
+                .product(name: "FFmpegKit", package: "FFmpegKit"),
+                "DisplayCriteria"
+            ],
+            path: "Vendor/KSPlayer/KSPlayer",
+            exclude: ["Metal/Shaders.metal"]
+        ),
         .target(
             name: "MediaShelfCore",
             linkerSettings: [.linkedLibrary("sqlite3")]
         ),
         .executableTarget(
             name: "MediaShelfApp",
-            dependencies: ["MediaShelfCore"]
+            dependencies: [
+                "MediaShelfCore",
+                "KSPlayer"
+            ]
         ),
         .testTarget(
             name: "MediaShelfCoreTests",

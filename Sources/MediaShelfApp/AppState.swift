@@ -423,11 +423,7 @@ final class AppState: ObservableObject {
             playingItem = nil
             return
         }
-        playingItem = nil
-        Task {
-            try? await Task.sleep(nanoseconds: 450_000_000)
-            playingItem = next
-        }
+        playingItem = next
     }
 
     private func sorted(_ input: [MediaItem]) -> [MediaItem] {

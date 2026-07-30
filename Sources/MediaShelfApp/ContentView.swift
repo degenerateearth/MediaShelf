@@ -7,7 +7,23 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             Group {
-                if appState.hasLibrary {
+                if let playingItem = appState.playingItem {
+                    PlayerView(
+                        appState: appState,
+                        controller: controller,
+                        item: playingItem
+                    )
+                    .id(playingItem.id)
+                    .transition(.opacity)
+                } else if let selectedItem = appState.selectedItem {
+                    DetailsView(
+                        appState: appState,
+                        controller: controller,
+                        originalItem: selectedItem
+                    )
+                    .id(selectedItem.id)
+                    .transition(.opacity)
+                } else if appState.hasLibrary {
                     LibraryShellView(appState: appState, controller: controller)
                 } else {
                     WelcomeView(appState: appState)
@@ -30,12 +46,6 @@ struct ContentView: View {
         .task {
             await appState.bootstrap()
         }
-        .sheet(item: $appState.selectedItem) { item in
-            DetailsView(appState: appState, originalItem: item)
-        }
-        .sheet(item: $appState.playingItem) { item in
-            PlayerView(appState: appState, controller: controller, item: item)
-        }
         .sheet(isPresented: $appState.showsSettings) {
             SettingsView(appState: appState, controller: controller)
         }
@@ -50,11 +60,10 @@ struct ContentView: View {
         } message: {
             Text(appState.errorMessage ?? "")
         }
-        .onChange(of: controller.lastAction) { action in
-            guard let action else { return }
+        .onChange(of: controller.actionRevision) { _ in
+            guard let action = controller.lastAction else { return }
             if action == .menu && appState.playingItem == nil {
                 appState.showsSettings.toggle()
-                controller.consume()
             }
             if action == .back && appState.playingItem == nil {
                 if appState.selectedItem != nil {
@@ -64,7 +73,6 @@ struct ContentView: View {
                 } else {
                     appState.toggleSidebar()
                 }
-                controller.consume()
             }
         }
     }

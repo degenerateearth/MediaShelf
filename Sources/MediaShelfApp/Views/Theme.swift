@@ -9,6 +9,8 @@ enum ShelfTheme {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isFocused) private var isFocused
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
@@ -17,11 +19,19 @@ struct PrimaryButtonStyle: ButtonStyle {
             .background(ShelfTheme.accent.opacity(configuration.isPressed ? 0.75 : 1))
             .foregroundStyle(Color.black.opacity(0.88))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(isFocused ? Color.white : .clear, lineWidth: 3)
+            }
+            .shadow(color: isFocused ? ShelfTheme.accent.opacity(0.55) : .clear, radius: 13)
+            .scaleEffect(configuration.isPressed ? 0.97 : (isFocused ? 1.06 : 1))
+            .animation(.easeOut(duration: 0.14), value: isFocused)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isFocused) private var isFocused
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
@@ -32,7 +42,10 @@ struct SecondaryButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.white.opacity(0.12))
+                    .stroke(isFocused ? ShelfTheme.accent : Color.white.opacity(0.12), lineWidth: isFocused ? 3 : 1)
             )
+            .shadow(color: isFocused ? ShelfTheme.accent.opacity(0.45) : .clear, radius: 13)
+            .scaleEffect(configuration.isPressed ? 0.97 : (isFocused ? 1.06 : 1))
+            .animation(.easeOut(duration: 0.14), value: isFocused)
     }
 }

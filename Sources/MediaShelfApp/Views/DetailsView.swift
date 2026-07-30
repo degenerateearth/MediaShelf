@@ -3,9 +3,10 @@ import SwiftUI
 
 struct DetailsView: View {
     @ObservedObject var appState: AppState
+    @ObservedObject var controller: ControllerManager
     let originalItem: MediaItem
-    @Environment(\.dismiss) private var dismiss
     @State private var showsEditor = false
+    @FocusState private var focusedEpisodeID: String?
 
     private var item: MediaItem {
         appState.media.first { $0.id == originalItem.id } ?? originalItem
@@ -37,13 +38,14 @@ struct DetailsView: View {
             VStack {
                 HStack {
                     Button {
-                        dismiss()
+                        appState.selectedItem = nil
                     } label: {
-                        Image(systemName: "xmark")
-                            .font(.headline)
-                            .padding(10)
+                        Label("Back to Browse", systemImage: "chevron.left")
+                            .font(.headline.weight(.semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
                             .background(.ultraThinMaterial)
-                            .clipShape(Circle())
+                            .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
                     .keyboardShortcut(.cancelAction)
@@ -56,6 +58,24 @@ struct DetailsView: View {
         .frame(minWidth: 900, minHeight: 650)
         .sheet(isPresented: $showsEditor) {
             MetadataEditorView(appState: appState, item: item)
+        }
+        .onChange(of: controller.actionRevision) { _ in
+            guard let action = controller.lastAction else { return }
+            switch action {
+            case .select:
+                if let focusedEpisodeID,
+                   let episode = siblingEpisodes.first(where: { $0.id == focusedEpisodeID }) {
+                    appState.playingItem = episode
+                } else {
+                    appState.playingItem = item
+                }
+            case .down:
+                moveEpisodeFocus(by: 1)
+            case .up:
+                moveEpisodeFocus(by: -1)
+            default:
+                break
+            }
         }
     }
 
@@ -214,7 +234,10 @@ struct DetailsView: View {
                     Text("Season \(season)")
                         .font(.title2.bold())
                     ForEach(siblingEpisodes.filter { ($0.seasonNumber ?? 0) == season }) { episode in
-                        EpisodeRow(item: episode) {
+                        EpisodeRow(
+                            item: episode,
+                            focusedEpisode: $focusedEpisodeID
+                        ) {
                             appState.playingItem = episode
                         }
                     }
@@ -232,10 +255,22 @@ struct DetailsView: View {
         }
         return "\(minutes)m"
     }
+
+    private func moveEpisodeFocus(by offset: Int) {
+        guard !siblingEpisodes.isEmpty else { return }
+        guard let currentEpisodeID = focusedEpisodeID,
+              let current = siblingEpisodes.firstIndex(where: { $0.id == currentEpisodeID }) else {
+            self.focusedEpisodeID = offset < 0 ? siblingEpisodes.last?.id : siblingEpisodes.first?.id
+            return
+        }
+        let next = min(max(current + offset, 0), siblingEpisodes.count - 1)
+        focusedEpisodeID = siblingEpisodes[next].id
+    }
 }
 
 private struct EpisodeRow: View {
     let item: MediaItem
+    var focusedEpisode: FocusState<String?>.Binding
     let play: () -> Void
     @Environment(\.isFocused) private var isFocused
 
@@ -277,6 +312,7 @@ private struct EpisodeRow: View {
         }
         .buttonStyle(.plain)
         .focusable()
+        .focused(focusedEpisode, equals: item.id)
     }
 
     private var episodeTitle: String {

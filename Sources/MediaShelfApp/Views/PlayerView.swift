@@ -1,81 +1,84 @@
-import AVKit
+import KSPlayer
 import MediaShelfCore
 import SwiftUI
 
 @MainActor
 final class PlayerSession: ObservableObject {
     let item: MediaItem
-    let player: AVPlayer
+    let coordinator: KSVideoPlayer.Coordinator
+    let options: KSOptions
     @Published var currentTime: Double = 0
     @Published var duration: Double = 0
     @Published var isPlaying = false
     @Published var errorMessage: String?
     @Published var didReachEnd = false
-    private var timeObserver: Any?
-    private var endObserver: NSObjectProtocol?
 
     init(item: MediaItem) {
         self.item = item
-        self.player = AVPlayer(url: item.mediaURL)
-        player.preventsDisplaySleepDuringVideoPlayback = true
-        let interval = CMTime(seconds: 2, preferredTimescale: 600)
-        timeObserver = player.addPeriodicTimeObserver(
-            forInterval: interval,
-            queue: .main
-        ) { [weak self] time in
-            Task { @MainActor in
-                guard let self else { return }
-                self.currentTime = time.seconds.isFinite ? time.seconds : 0
-                let itemDuration = self.player.currentItem?.duration.seconds ?? 0
-                self.duration = itemDuration.isFinite ? itemDuration : 0
-                self.isPlaying = self.player.rate != 0
-                if let error = self.player.currentItem?.error {
-                    self.errorMessage = error.localizedDescription
-                }
-            }
-        }
-        endObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: player.currentItem,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.isPlaying = false
-                self?.didReachEnd = true
-            }
-        }
-    }
+        self.coordinator = KSVideoPlayer.Coordinator()
+        self.options = KSOptions()
+        options.startPlayTime = item.isWatched ? 0 : item.playbackPosition
+        options.autoSelectEmbedSubtitle = true
+        options.hardwareDecode = true
 
-    deinit {
-        if let timeObserver { player.removeTimeObserver(timeObserver) }
-        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        // FFmpeg is the primary engine so MKV, EAC3, DTS, and embedded
+        // subtitles work immediately instead of waiting for AVPlayer to fail.
+        KSOptions.firstPlayerType = KSMEPlayer.self
+        KSOptions.secondPlayerType = KSAVPlayer.self
+
+        coordinator.onPlay = { [weak self] currentTime, duration in
+            guard let self else { return }
+            self.currentTime = currentTime.isFinite ? currentTime : 0
+            self.duration = duration.isFinite ? duration : 0
+        }
+        coordinator.onStateChanged = { [weak self] _, state in
+            guard let self else { return }
+            self.isPlaying = state.isPlaying
+            if state == .error, self.errorMessage == nil {
+                self.errorMessage = "The codec engine could not open this file."
+            }
+        }
+        coordinator.onFinish = { [weak self] _, error in
+            guard let self else { return }
+            self.isPlaying = false
+            if let error {
+                self.errorMessage = error.localizedDescription
+            } else {
+                self.didReachEnd = true
+            }
+        }
     }
 
     func start() {
-        if item.playbackPosition > 0 && !item.isWatched {
-            player.seek(
-                to: CMTime(seconds: item.playbackPosition, preferredTimescale: 600),
-                toleranceBefore: .zero,
-                toleranceAfter: .zero
-            )
-        }
-        player.play()
+        coordinator.playerLayer?.play()
         isPlaying = true
     }
 
+    func stop() {
+        coordinator.playerLayer?.pause()
+        coordinator.resetPlayer()
+        isPlaying = false
+    }
+
     func togglePlayback() {
-        if player.rate == 0 {
-            player.play()
-            isPlaying = true
-        } else {
-            player.pause()
+        guard let playerLayer = coordinator.playerLayer else { return }
+        if playerLayer.state.isPlaying {
+            playerLayer.pause()
             isPlaying = false
+        } else {
+            playerLayer.play()
+            isPlaying = true
         }
     }
 
     func jump(by seconds: Double) {
         let target = max(currentTime + seconds, 0)
-        player.seek(to: CMTime(seconds: target, preferredTimescale: 600))
+        coordinator.seek(time: target)
+    }
+
+    func seek(to time: Double) {
+        coordinator.seek(time: min(max(time, 0), duration > 0 ? duration : time))
+        currentTime = time
     }
 }
 
@@ -83,10 +86,11 @@ struct PlayerView: View {
     @ObservedObject var appState: AppState
     @ObservedObject var controller: ControllerManager
     let item: MediaItem
-    @Environment(\.dismiss) private var dismiss
     @StateObject private var session: PlayerSession
     @State private var showsControls = true
     @State private var lastSavedAt: Double = 0
+    @State private var scrubPosition: Double = 0
+    @State private var isScrubbing = false
 
     init(appState: AppState, controller: ControllerManager, item: MediaItem) {
         self.appState = appState
@@ -98,7 +102,11 @@ struct PlayerView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            VideoPlayer(player: session.player)
+            KSVideoPlayer(
+                coordinator: session.coordinator,
+                url: item.mediaURL,
+                options: session.options
+            )
                 .ignoresSafeArea()
             if showsControls || session.errorMessage != nil {
                 controlsOverlay
@@ -110,8 +118,8 @@ struct PlayerView: View {
             session.start()
         }
         .onDisappear {
-            session.player.pause()
             saveProgress()
+            session.stop()
         }
         .onChange(of: session.currentTime) { time in
             if time - lastSavedAt >= 10 {
@@ -130,12 +138,13 @@ struct PlayerView: View {
                 )
             }
             if appState.nextEpisode(after: item) != nil {
-                dismiss()
                 appState.playNextEpisode(after: item)
+            } else {
+                appState.playingItem = nil
             }
         }
-        .onChange(of: controller.lastAction) { action in
-            guard let action else { return }
+        .onChange(of: controller.actionRevision) { _ in
+            guard let action = controller.lastAction else { return }
             switch action {
             case .playPause, .select:
                 session.togglePlayback()
@@ -143,14 +152,19 @@ struct PlayerView: View {
                 session.jump(by: -10)
             case .right:
                 session.jump(by: 10)
+            case .seekBackward:
+                session.jump(by: -5)
+                showsControls = true
+            case .seekForward:
+                session.jump(by: 5)
+                showsControls = true
             case .back:
-                dismiss()
+                appState.playingItem = nil
             case .menu:
                 withAnimation { showsControls.toggle() }
             case .up, .down:
                 showsControls = true
             }
-            controller.consume()
         }
         .onTapGesture {
             withAnimation { showsControls.toggle() }
@@ -170,9 +184,9 @@ struct PlayerView: View {
                 }
                 Spacer()
                 Button {
-                    dismiss()
+                    appState.playingItem = nil
                 } label: {
-                    Label("Exit Player", systemImage: "xmark.circle.fill")
+                    Label("Back to Details", systemImage: "chevron.left.circle.fill")
                 }
                 .buttonStyle(SecondaryButtonStyle())
                 .keyboardShortcut(.cancelAction)
@@ -200,7 +214,7 @@ struct PlayerView: View {
                             appState.showMediaInFinder(item)
                         }
                         Button("Back") {
-                            dismiss()
+                            appState.playingItem = nil
                         }
                     }
                 }
@@ -210,12 +224,28 @@ struct PlayerView: View {
             }
             Spacer()
             VStack(spacing: 14) {
-                ProgressView(
-                    value: session.duration > 0 ? session.currentTime / session.duration : 0
+                Slider(
+                    value: Binding(
+                        get: { isScrubbing ? scrubPosition : session.currentTime },
+                        set: {
+                            scrubPosition = $0
+                            isScrubbing = true
+                        }
+                    ),
+                    in: 0...max(session.duration, 1),
+                    onEditingChanged: { editing in
+                        if editing {
+                            scrubPosition = session.currentTime
+                            isScrubbing = true
+                        } else {
+                            session.seek(to: scrubPosition)
+                            isScrubbing = false
+                        }
+                    }
                 )
                 .tint(ShelfTheme.accent)
                 HStack {
-                    Text(timestamp(session.currentTime))
+                    Text(timestamp(isScrubbing ? scrubPosition : session.currentTime))
                         .monospacedDigit()
                     Spacer()
                     Button {
@@ -235,7 +265,7 @@ struct PlayerView: View {
                         Label("Forward 10", systemImage: "goforward.10")
                     }
                     Spacer()
-                    Text("-\(timestamp(max(session.duration - session.currentTime, 0)))")
+                    Text("-\(timestamp(max(session.duration - (isScrubbing ? scrubPosition : session.currentTime), 0)))")
                         .monospacedDigit()
                 }
                 .buttonStyle(.plain)

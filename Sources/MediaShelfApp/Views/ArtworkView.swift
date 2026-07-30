@@ -54,8 +54,14 @@ struct ArtworkView: View {
 struct PosterCard: View {
     let item: MediaItem
     var treatEpisodeAsSeries = false
+    let focusID: String
+    @Binding var focusedCard: String?
     let action: () -> Void
     @Environment(\.isFocused) private var isFocused
+
+    private var isHighlighted: Bool {
+        isFocused || focusedCard == focusID
+    }
 
     var body: some View {
         Button(action: action) {
@@ -89,15 +95,15 @@ struct PosterCard: View {
                     }
                 }
                 .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .stroke(
-                            isFocused ? ShelfTheme.accent : Color.white.opacity(0.08),
-                            lineWidth: isFocused ? 4 : 1
+                            isHighlighted ? ShelfTheme.accent : Color.white.opacity(0.08),
+                            lineWidth: isHighlighted ? 4 : 1
                         )
                 }
                 .shadow(
-                    color: isFocused ? ShelfTheme.accent.opacity(0.28) : .black.opacity(0.28),
-                    radius: isFocused ? 18 : 10,
+                    color: isHighlighted ? ShelfTheme.accent.opacity(0.28) : .black.opacity(0.28),
+                    radius: isHighlighted ? 18 : 10,
                     y: 6
                 )
 
@@ -111,11 +117,12 @@ struct PosterCard: View {
                     .lineLimit(1)
             }
             .frame(width: 178, alignment: .leading)
-            .scaleEffect(isFocused ? 1.045 : 1)
-            .animation(.easeOut(duration: 0.16), value: isFocused)
+            .scaleEffect(isHighlighted ? 1.045 : 1)
+            .animation(.easeOut(duration: 0.16), value: isHighlighted)
         }
         .buttonStyle(.plain)
         .focusable()
+        .id(focusID)
         .contextMenu {
             Button("Open Details", action: action)
         }

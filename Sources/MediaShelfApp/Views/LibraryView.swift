@@ -16,6 +16,20 @@ struct LibraryShellView: View {
         .onChange(of: appState.selectedFilter) { _ in
             appState.sidebarVisibility = .detailOnly
         }
+        .onChange(of: controller.actionRevision) { _ in
+            guard appState.sidebarVisibility != .detailOnly,
+                  let action = controller.lastAction else { return }
+            switch action {
+            case .up:
+                moveSidebarSelection(by: -1)
+            case .down:
+                moveSidebarSelection(by: 1)
+            case .right, .select:
+                appState.sidebarVisibility = .detailOnly
+            default:
+                break
+            }
+        }
     }
 
     private var sidebar: some View {
@@ -76,64 +90,123 @@ struct LibraryShellView: View {
         case .favorites: "heart.fill"
         }
     }
+
+    private func moveSidebarSelection(by offset: Int) {
+        let filters = MediaFilter.allCases
+        guard let current = filters.firstIndex(of: appState.selectedFilter) else {
+            appState.selectedFilter = .all
+            return
+        }
+        appState.selectedFilter = filters[
+            min(max(current + offset, filters.startIndex), filters.index(before: filters.endIndex))
+        ]
+    }
+}
+
+private enum ControllerDestination {
+    case play(MediaItem)
+    case details(MediaItem)
+    case media(MediaItem)
+}
+
+private struct ControllerNavigationEntry {
+    let id: String
+    let destination: ControllerDestination
+}
+
+private struct ControllerNavigationRow {
+    let id: String
+    let entries: [ControllerNavigationEntry]
 }
 
 struct LibraryHomeView: View {
     @ObservedObject var appState: AppState
     @ObservedObject var controller: ControllerManager
     private let columns = [GridItem(.adaptive(minimum: 178, maximum: 205), spacing: 26)]
+    @State private var focusedCardID: String?
 
     var body: some View {
         ZStack {
             ShelfTheme.background.ignoresSafeArea()
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 34) {
-                    header
-                    if appState.searchText.isEmpty && appState.selectedFilter == .all {
-                        hero
-                        if !appState.continueWatching.isEmpty {
-                            MediaShelfRow(
-                                title: "Continue Watching",
-                                items: appState.continueWatching,
-                                appState: appState
-                            )
+            ScrollViewReader { pageProxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 34) {
+                        header
+                        if appState.searchText.isEmpty && appState.selectedFilter == .all {
+                            hero
+                                .id("row:hero")
+                            if !appState.continueWatching.isEmpty {
+                                MediaShelfRow(
+                                    title: "Continue Watching",
+                                    items: appState.continueWatching,
+                                    focusGroup: "continue",
+                                    focusedCard: $focusedCardID,
+                                    appState: appState
+                                )
+                                .id("row:continue")
+                            }
+                            if !appState.movies.isEmpty {
+                                MediaShelfRow(
+                                    title: "Movies",
+                                    items: Array(appState.movies.prefix(20)),
+                                    focusGroup: "movies",
+                                    focusedCard: $focusedCardID,
+                                    appState: appState
+                                )
+                                .id("row:movies")
+                            }
+                            if !appState.series.isEmpty {
+                                MediaShelfRow(
+                                    title: "TV Shows",
+                                    items: appState.series.compactMap(\.representative),
+                                    episodesAreSeries: true,
+                                    focusGroup: "tv",
+                                    focusedCard: $focusedCardID,
+                                    appState: appState
+                                )
+                                .id("row:tv")
+                            }
+                            ForEach(appState.genreShelves) { shelf in
+                                MediaShelfRow(
+                                    title: shelf.name,
+                                    items: shelf.items,
+                                    episodesAreSeries: true,
+                                    focusGroup: "genre:\(shelf.id)",
+                                    focusedCard: $focusedCardID,
+                                    appState: appState
+                                )
+                                .id("row:genre:\(shelf.id)")
+                            }
+                            if !appState.recentlyAdded.isEmpty {
+                                MediaShelfRow(
+                                    title: "Recently Added",
+                                    items: appState.recentlyAdded,
+                                    episodesAreSeries: true,
+                                    focusGroup: "recent",
+                                    focusedCard: $focusedCardID,
+                                    appState: appState
+                                )
+                                .id("row:recent")
+                            }
+                        } else {
+                            filteredGrid
                         }
-                        if !appState.movies.isEmpty {
-                            MediaShelfRow(
-                                title: "Movies",
-                                items: Array(appState.movies.prefix(20)),
-                                appState: appState
-                            )
+                    }
+                    .padding(.bottom, 54)
+                }
+                .onChange(of: focusedCardID) { focusID in
+                    guard let focusID,
+                          let row = controllerRows.first(where: {
+                              $0.entries.contains(where: { $0.id == focusID })
+                          }) else { return }
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        if row.id.hasPrefix("filtered-") {
+                            pageProxy.scrollTo(focusID, anchor: .center)
+                        } else {
+                            pageProxy.scrollTo("row:\(row.id)", anchor: .center)
                         }
-                        if !appState.series.isEmpty {
-                            MediaShelfRow(
-                                title: "TV Shows",
-                                items: appState.series.compactMap(\.representative),
-                                episodesAreSeries: true,
-                                appState: appState
-                            )
-                        }
-                        ForEach(appState.genreShelves) { shelf in
-                            MediaShelfRow(
-                                title: shelf.name,
-                                items: shelf.items,
-                                episodesAreSeries: true,
-                                appState: appState
-                            )
-                        }
-                        if !appState.recentlyAdded.isEmpty {
-                            MediaShelfRow(
-                                title: "Recently Added",
-                                items: appState.recentlyAdded,
-                                episodesAreSeries: true,
-                                appState: appState
-                            )
-                        }
-                    } else {
-                        filteredGrid
                     }
                 }
-                .padding(.bottom, 54)
             }
         }
         .toolbar {
@@ -150,6 +223,35 @@ struct LibraryHomeView: View {
                     }
                 }
                 .frame(width: 155)
+            }
+        }
+        .onAppear {
+            resetControllerFocus()
+        }
+        .onChange(of: appState.selectedFilter) { _ in
+            resetControllerFocus()
+        }
+        .onChange(of: appState.searchText) { _ in
+            resetControllerFocus()
+        }
+        .onChange(of: appState.media.count) { _ in
+            resetControllerFocus()
+        }
+        .onChange(of: controller.actionRevision) { _ in
+            handleControllerAction()
+        }
+        .onMoveCommand { direction in
+            switch direction {
+            case .left:
+                handleNavigationAction(.left)
+            case .right:
+                handleNavigationAction(.right)
+            case .up:
+                handleNavigationAction(.up)
+            case .down:
+                handleNavigationAction(.down)
+            default:
+                break
             }
         }
     }
@@ -236,12 +338,24 @@ struct LibraryHomeView: View {
                             Label(item.continueWatching ? "Resume" : "Play", systemImage: "play.fill")
                         }
                         .buttonStyle(PrimaryButtonStyle())
+                        .focusable()
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(focusedCardID == "hero::play" ? Color.white : .clear, lineWidth: 3)
+                        }
+                        .scaleEffect(focusedCardID == "hero::play" ? 1.06 : 1)
                         Button {
                             appState.selectedItem = item
                         } label: {
                             Label("Details", systemImage: "info.circle")
                         }
                         .buttonStyle(SecondaryButtonStyle())
+                        .focusable()
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(focusedCardID == "hero::details" ? ShelfTheme.accent : .clear, lineWidth: 3)
+                        }
+                        .scaleEffect(focusedCardID == "hero::details" ? 1.06 : 1)
                     }
                 }
                 .padding(38)
@@ -267,8 +381,13 @@ struct LibraryHomeView: View {
                 .padding(.top, 90)
             } else {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 30) {
-                    ForEach(appState.filteredCards) { item in
-                        PosterCard(item: item, treatEpisodeAsSeries: item.kind == .episode) {
+                    ForEach(Array(appState.filteredCards.enumerated()), id: \.element.id) { index, item in
+                        PosterCard(
+                            item: item,
+                            treatEpisodeAsSeries: item.kind == .episode,
+                            focusID: focusToken(group: "filtered-\(index / 5)", item: item),
+                            focusedCard: $focusedCardID
+                        ) {
                             appState.selectedItem = item
                         }
                     }
@@ -277,12 +396,143 @@ struct LibraryHomeView: View {
             }
         }
     }
+
+    private var controllerRows: [ControllerNavigationRow] {
+        if appState.searchText.isEmpty && appState.selectedFilter == .all {
+            var rows: [ControllerNavigationRow] = []
+            if let item = appState.continueWatching.first ?? appState.recentlyAdded.first {
+                rows.append(.init(
+                    id: "hero",
+                    entries: [
+                        .init(id: "hero::play", destination: .play(item)),
+                        .init(id: "hero::details", destination: .details(item))
+                    ]
+                ))
+            }
+            if !appState.continueWatching.isEmpty {
+                rows.append(mediaNavigationRow(id: "continue", items: appState.continueWatching))
+            }
+            if !appState.movies.isEmpty {
+                rows.append(mediaNavigationRow(id: "movies", items: Array(appState.movies.prefix(20))))
+            }
+            let shows = appState.series.compactMap(\.representative)
+            if !shows.isEmpty {
+                rows.append(mediaNavigationRow(id: "tv", items: shows))
+            }
+            rows.append(contentsOf: appState.genreShelves.map {
+                mediaNavigationRow(id: "genre:\($0.id)", items: $0.items)
+            })
+            if !appState.recentlyAdded.isEmpty {
+                rows.append(mediaNavigationRow(id: "recent", items: appState.recentlyAdded))
+            }
+            return rows
+        }
+
+        return stride(from: 0, to: appState.filteredCards.count, by: 5).map { start in
+            let end = min(start + 5, appState.filteredCards.count)
+            return mediaNavigationRow(
+                id: "filtered-\(start / 5)",
+                items: Array(appState.filteredCards[start..<end])
+            )
+        }
+    }
+
+    private func mediaNavigationRow(id: String, items: [MediaItem]) -> ControllerNavigationRow {
+        .init(
+            id: id,
+            entries: items.map {
+                .init(id: focusToken(group: id, item: $0), destination: .media($0))
+            }
+        )
+    }
+
+    private func focusToken(group: String, item: MediaItem) -> String {
+        "\(group)::\(item.id)"
+    }
+
+    private func resetControllerFocus() {
+        guard let entry = controllerRows.first?.entries.first else {
+            focusedCardID = nil
+            return
+        }
+        focusedCardID = entry.id
+    }
+
+    private func handleControllerAction() {
+        guard appState.sidebarVisibility == .detailOnly,
+              let action = controller.lastAction else { return }
+        handleNavigationAction(action)
+    }
+
+    private func handleNavigationAction(_ action: ControllerAction) {
+        switch action {
+        case .left:
+            moveControllerFocus(horizontal: -1)
+        case .right:
+            moveControllerFocus(horizontal: 1)
+        case .up:
+            moveControllerFocus(vertical: -1)
+        case .down:
+            moveControllerFocus(vertical: 1)
+        case .select:
+            switch focusedControllerDestination {
+            case .play(let item):
+                appState.playingItem = item
+            case .details(let item), .media(let item):
+                appState.selectedItem = item
+            case nil:
+                resetControllerFocus()
+            }
+        default:
+            break
+        }
+    }
+
+    private var focusedControllerLocation: (row: Int, column: Int)? {
+        guard let focusedCardID else { return nil }
+        for (rowIndex, row) in controllerRows.enumerated() {
+            if let column = row.entries.firstIndex(where: { $0.id == focusedCardID }) {
+                return (rowIndex, column)
+            }
+        }
+        return nil
+    }
+
+    private var focusedControllerDestination: ControllerDestination? {
+        guard let location = focusedControllerLocation else { return nil }
+        return controllerRows[location.row].entries[location.column].destination
+    }
+
+    private func moveControllerFocus(horizontal offset: Int) {
+        guard !controllerRows.isEmpty else { return }
+        guard let location = focusedControllerLocation else {
+            resetControllerFocus()
+            return
+        }
+        let row = controllerRows[location.row]
+        let column = min(max(location.column + offset, 0), row.entries.count - 1)
+        focusedCardID = row.entries[column].id
+    }
+
+    private func moveControllerFocus(vertical offset: Int) {
+        guard !controllerRows.isEmpty else { return }
+        guard let location = focusedControllerLocation else {
+            resetControllerFocus()
+            return
+        }
+        let rowIndex = min(max(location.row + offset, 0), controllerRows.count - 1)
+        let row = controllerRows[rowIndex]
+        let column = min(location.column, row.entries.count - 1)
+        focusedCardID = row.entries[column].id
+    }
 }
 
 struct MediaShelfRow: View {
     let title: String
     let items: [MediaItem]
     var episodesAreSeries = false
+    let focusGroup: String
+    @Binding var focusedCard: String?
     @ObservedObject var appState: AppState
 
     var body: some View {
@@ -290,20 +540,43 @@ struct MediaShelfRow: View {
             Text(title)
                 .font(.title2.weight(.bold))
                 .padding(.horizontal, 34)
+            shelfScroller
+        }
+    }
+
+    private var shelfScroller: some View {
+        ScrollViewReader { rowProxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 24) {
                     ForEach(items) { item in
-                        PosterCard(
-                            item: item,
-                            treatEpisodeAsSeries: episodesAreSeries && item.kind == .episode
-                        ) {
-                            appState.selectedItem = item
-                        }
+                        shelfCard(item)
                     }
                 }
                 .padding(.horizontal, 34)
                 .padding(.vertical, 8)
             }
+            .onChange(of: focusedCard) { focusID in
+                guard let focusID, focusID.hasPrefix("\(focusGroup)::") else { return }
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    rowProxy.scrollTo(focusID, anchor: .center)
+                }
+            }
+            .onAppear {
+                guard let focusID = focusedCard,
+                      focusID.hasPrefix("\(focusGroup)::") else { return }
+                rowProxy.scrollTo(focusID, anchor: .center)
+            }
+        }
+    }
+
+    private func shelfCard(_ item: MediaItem) -> some View {
+        PosterCard(
+            item: item,
+            treatEpisodeAsSeries: episodesAreSeries && item.kind == .episode,
+            focusID: "\(focusGroup)::\(item.id)",
+            focusedCard: $focusedCard
+        ) {
+            appState.selectedItem = item
         }
     }
 }
