@@ -197,6 +197,24 @@ public struct TVSeries: Identifiable, Hashable, Sendable {
     public var representative: MediaItem? {
         episodes.first
     }
+
+    /// The furthest episode the viewer has interacted with is the only episode
+    /// allowed to represent a series in Continue Watching. If it is finished,
+    /// older partial episodes stay suppressed instead of resurfacing.
+    public var continueWatchingEpisode: MediaItem? {
+        let furthestViewed = episodes
+            .filter {
+                $0.lastWatched != nil ||
+                $0.playbackPosition > 0 ||
+                $0.isWatched
+            }
+            .max {
+                ($0.seasonNumber ?? 0, $0.episodeNumber ?? 0) <
+                ($1.seasonNumber ?? 0, $1.episodeNumber ?? 0)
+            }
+        guard let furthestViewed, furthestViewed.continueWatching else { return nil }
+        return furthestViewed
+    }
 }
 
 public enum MediaFilter: String, CaseIterable, Identifiable, Sendable {

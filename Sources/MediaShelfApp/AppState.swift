@@ -65,7 +65,9 @@ final class AppState: ObservableObject {
     }
 
     var continueWatching: [MediaItem] {
-        media.filter(\.continueWatching).sorted {
+        let movies = media.filter { $0.kind == .movie && $0.continueWatching }
+        let shows = series.compactMap(\.continueWatchingEpisode)
+        return (movies + shows).sorted {
             ($0.lastWatched ?? .distantPast) > ($1.lastWatched ?? .distantPast)
         }
     }
@@ -273,6 +275,21 @@ final class AppState: ObservableObject {
             try await database.restart(mediaID: item.id)
             try await reload()
             playingItem = media.first { $0.id == item.id }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func markFinished(_ item: MediaItem, duration: Double? = nil) async {
+        do {
+            try await database.markFinished(
+                mediaID: item.id,
+                duration: duration ?? item.runtime
+            )
+            try await reload()
+            if selectedItem?.id == item.id {
+                selectedItem = media.first { $0.id == item.id }
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

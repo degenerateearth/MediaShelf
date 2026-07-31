@@ -91,6 +91,7 @@ struct PlayerView: View {
     @State private var lastSavedAt: Double = 0
     @State private var scrubPosition: Double = 0
     @State private var isScrubbing = false
+    @State private var didFinishPlayback = false
 
     init(appState: AppState, controller: ControllerManager, item: MediaItem) {
         self.appState = appState
@@ -118,7 +119,9 @@ struct PlayerView: View {
             session.start()
         }
         .onDisappear {
-            saveProgress()
+            if !didFinishPlayback {
+                saveProgress()
+            }
             session.stop()
         }
         .onChange(of: session.currentTime) { time in
@@ -129,18 +132,18 @@ struct PlayerView: View {
         }
         .onChange(of: session.didReachEnd) { didReachEnd in
             guard didReachEnd else { return }
+            didFinishPlayback = true
             let completedDuration = session.duration > 0 ? session.duration : session.currentTime
             Task {
-                await appState.saveProgress(
+                await appState.markFinished(
                     item,
-                    position: completedDuration,
                     duration: completedDuration > 0 ? completedDuration : nil
                 )
-            }
-            if appState.nextEpisode(after: item) != nil {
-                appState.playNextEpisode(after: item)
-            } else {
-                appState.playingItem = nil
+                if appState.nextEpisode(after: item) != nil {
+                    appState.playNextEpisode(after: item)
+                } else {
+                    appState.playingItem = nil
+                }
             }
         }
         .onChange(of: controller.actionRevision) { _ in

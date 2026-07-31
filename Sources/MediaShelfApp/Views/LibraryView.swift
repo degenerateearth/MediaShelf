@@ -141,6 +141,7 @@ struct LibraryHomeView: View {
                                     items: appState.continueWatching,
                                     focusGroup: "continue",
                                     focusedCard: $focusedCardID,
+                                    canMarkFinished: true,
                                     appState: appState
                                 )
                                 .id("row:continue")
@@ -533,6 +534,7 @@ struct MediaShelfRow: View {
     var episodesAreSeries = false
     let focusGroup: String
     @Binding var focusedCard: String?
+    var canMarkFinished = false
     @ObservedObject var appState: AppState
 
     var body: some View {
@@ -574,7 +576,10 @@ struct MediaShelfRow: View {
             item: item,
             treatEpisodeAsSeries: episodesAreSeries && item.kind == .episode,
             focusID: "\(focusGroup)::\(item.id)",
-            focusedCard: $focusedCard
+            focusedCard: $focusedCard,
+            markFinished: canMarkFinished ? {
+                Task { await appState.markFinished(item) }
+            } : nil
         ) {
             appState.selectedItem = item
         }

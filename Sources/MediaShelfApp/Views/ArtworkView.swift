@@ -56,6 +56,7 @@ struct PosterCard: View {
     var treatEpisodeAsSeries = false
     let focusID: String
     @Binding var focusedCard: String?
+    var markFinished: (() -> Void)? = nil
     let action: () -> Void
     @Environment(\.isFocused) private var isFocused
 
@@ -125,6 +126,10 @@ struct PosterCard: View {
         .id(focusID)
         .contextMenu {
             Button("Open Details", action: action)
+            if let markFinished {
+                Divider()
+                Button("Finished", systemImage: "checkmark.circle", action: markFinished)
+            }
         }
         .accessibilityLabel("\(item.displayTitle), \(subtitle)")
     }

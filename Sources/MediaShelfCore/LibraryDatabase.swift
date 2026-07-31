@@ -264,6 +264,23 @@ public actor LibraryDatabase {
         try stepDone(statement)
     }
 
+    public func markFinished(mediaID: String, duration: Double? = nil) throws {
+        let statement = try prepare("""
+        UPDATE media_items
+        SET runtime = COALESCE(?, runtime),
+            playback_position = COALESCE(?, runtime, playback_position),
+            last_watched = ?,
+            is_watched = 1
+        WHERE id = ?
+        """)
+        defer { sqlite3_finalize(statement) }
+        bind(duration, to: 1, in: statement)
+        bind(duration, to: 2, in: statement)
+        bind(Date(), to: 3, in: statement)
+        bind(mediaID, to: 4, in: statement)
+        try stepDone(statement)
+    }
+
     public func setFavorite(mediaID: String, favorite: Bool) throws {
         let statement = try prepare("UPDATE media_items SET is_favorite = ? WHERE id = ?")
         defer { sqlite3_finalize(statement) }
