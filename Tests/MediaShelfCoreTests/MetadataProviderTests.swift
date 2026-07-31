@@ -93,4 +93,76 @@ final class MetadataProviderTests: XCTestCase {
         )
         XCTAssertNil(result)
     }
+
+    func testUsesCanonicalAliasForUpInSmoke() {
+        XCTAssertEqual(
+            CinemetaMetadataProvider.queryTitles(
+                for: "Cheech and Chong Up in Smoke"
+            ),
+            ["Cheech and Chong Up in Smoke", "Up in Smoke"]
+        )
+    }
+
+    func testSelectsUniqueUpInSmokeResultFromOriginalSearch() {
+        let expected = MetadataMatch(
+            providerID: "tt0078446",
+            title: "Up in Smoke",
+            year: 1978,
+            summary: nil,
+            genres: [],
+            posterURL: nil,
+            backdropURL: nil
+        )
+        let unrelated = MetadataMatch(
+            providerID: "tt0087042",
+            title: "Cheech & Chong's: The Corsican Brothers",
+            year: 1984,
+            summary: nil,
+            genres: [],
+            posterURL: nil,
+            backdropURL: nil
+        )
+        let result = CinemetaMetadataProvider.selectExactMatch(
+            [expected, unrelated],
+            titles: CinemetaMetadataProvider.queryTitles(
+                for: "Cheech and Chong Up in Smoke"
+            ),
+            year: nil
+        )
+        XCTAssertEqual(result?.providerID, expected.providerID)
+    }
+
+    func testUsesStylizedCanonicalAliasForInglouriousBasterds() {
+        XCTAssertEqual(
+            CinemetaMetadataProvider.queryTitles(for: "Inglorious Bastards"),
+            ["Inglorious Bastards", "Inglourious Basterds"]
+        )
+    }
+
+    func testCanonicalAliasDoesNotSelectDifferent1978Film() {
+        let tarantinoFilm = MetadataMatch(
+            providerID: "tt0361748",
+            title: "Inglourious Basterds",
+            year: 2009,
+            summary: nil,
+            genres: [],
+            posterURL: nil,
+            backdropURL: nil
+        )
+        let originalFilm = MetadataMatch(
+            providerID: "tt0076584",
+            title: "The Inglorious Bastards",
+            year: 1978,
+            summary: nil,
+            genres: [],
+            posterURL: nil,
+            backdropURL: nil
+        )
+        let result = CinemetaMetadataProvider.selectExactMatch(
+            [originalFilm, tarantinoFilm],
+            title: "Inglourious Basterds",
+            year: nil
+        )
+        XCTAssertEqual(result?.providerID, tarantinoFilm.providerID)
+    }
 }

@@ -163,15 +163,16 @@ final class AppState: ObservableObject {
             automaticArtwork = try await database.setting("automatic_artwork") != "false"
             try paths.prepare()
             let matcherVersion = try await database.setting("artwork_matcher_version")
-            if matcherVersion != "strict-v2" {
+            let matcherNeedsRetry = matcherVersion != "strict-v4"
+            if !["strict-v2", "strict-v3", "strict-v4"].contains(matcherVersion) {
                 let stalePaths = try await database.resetProviderEnrichment(
                     artworkRoot: paths.artwork.path
                 )
                 for path in stalePaths {
                     try? FileManager.default.removeItem(atPath: path)
                 }
-                try await database.setSetting("artwork_matcher_version", value: "strict-v2")
             }
+            try await database.setSetting("artwork_matcher_version", value: "strict-v4")
             try await reload()
             let parserVersion = try await database.setting("filename_parser_version")
             if parserVersion != "season-v2" {
@@ -180,7 +181,7 @@ final class AppState: ObservableObject {
                 try await reload()
             }
             if automaticArtwork &&
-                (matcherVersion != "strict-v2" || parserVersion != "season-v2") {
+                (matcherNeedsRetry || parserVersion != "season-v2") {
                 startArtworkEnrichment()
             }
         } catch {

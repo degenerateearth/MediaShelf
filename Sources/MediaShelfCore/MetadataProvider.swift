@@ -47,34 +47,53 @@ public struct CinemetaMetadataProvider: MetadataProvider {
         kind: MediaKind
     ) async throws -> MetadataMatch? {
         let type = kind == .movie ? "movie" : "series"
-        guard let encoded = title.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              let url = URL(
+        for queryTitle in Self.queryTitles(for: title) {
+            guard let encoded = queryTitle.addingPercentEncoding(
+                withAllowedCharacters: .urlPathAllowed
+            ), let url = URL(
                 string: "https://v3-cinemeta.strem.io/catalog/\(type)/top/search=\(encoded).json"
-              )
-        else { return nil }
+            ) else { continue }
 
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 12
-        request.setValue("MediaShelf/1.0", forHTTPHeaderField: "User-Agent")
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, 200..<300 ~= http.statusCode else {
-            return nil
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 12
+            request.setValue("MediaShelf/1.0", forHTTPHeaderField: "User-Agent")
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse,
+                  200..<300 ~= http.statusCode
+            else { continue }
+
+            let payload = try JSONDecoder().decode(CatalogResponse.self, from: data)
+            let candidates = payload.metas.map {
+                MetadataMatch(
+                    providerID: $0.id,
+                    title: $0.name,
+                    year: Self.extractYear($0.releaseInfo),
+                    summary: $0.description,
+                    genres: $0.genres ?? [],
+                    posterURL: $0.poster.flatMap(URL.init(string:)),
+                    backdropURL: $0.background.flatMap(URL.init(string:))
+                )
+            }
+            if let match = Self.selectExactMatch(
+                candidates,
+                titles: Self.queryTitles(for: title),
+                year: year
+            ) {
+                return match
+            }
         }
+        return nil
+    }
 
-        let payload = try JSONDecoder().decode(CatalogResponse.self, from: data)
-        let candidates = payload.metas.map {
-            MetadataMatch(
-                providerID: $0.id,
-                title: $0.name,
-                year: Self.extractYear($0.releaseInfo),
-                summary: $0.description,
-                genres: $0.genres ?? [],
-                posterURL: $0.poster.flatMap(URL.init(string:)),
-                backdropURL: $0.background.flatMap(URL.init(string:))
-            )
+    static func queryTitles(for title: String) -> [String] {
+        let aliases = [
+            "cheechandchongupinsmoke": "Up in Smoke",
+            "ingloriousbastards": "Inglourious Basterds",
+        ]
+        guard let alias = aliases[title.normalizedForMatching] else {
+            return [title]
         }
-
-        return Self.selectExactMatch(candidates, title: title, year: year)
+        return [title, alias]
     }
 
     static func selectExactMatch(
@@ -91,6 +110,19 @@ public struct CinemetaMetadataProvider: MetadataProvider {
         }
         // Without a year, ambiguity is worse than a placeholder.
         return exactTitles.count == 1 ? exactTitles[0] : nil
+    }
+
+    static func selectExactMatch(
+        _ candidates: [MetadataMatch],
+        titles: [String],
+        year: Int?
+    ) -> MetadataMatch? {
+        for title in titles {
+            if let match = selectExactMatch(candidates, title: title, year: year) {
+                return match
+            }
+        }
+        return nil
     }
 
     private static func extractYear(_ value: String?) -> Int? {
