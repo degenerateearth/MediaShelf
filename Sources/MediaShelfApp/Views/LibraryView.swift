@@ -35,6 +35,19 @@ struct LibraryShellView: View {
     private var sidebar: some View {
         List(selection: $appState.selectedFilter) {
             Section {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("MEDIA")
+                        .font(.caption2.weight(.bold))
+                        .tracking(2.4)
+                        .foregroundStyle(ShelfTheme.accent)
+                    Text("My Library")
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(ShelfTheme.textPrimary)
+                }
+                .padding(.vertical, 12)
+                .listRowBackground(Color.clear)
+            }
+            Section {
                 ForEach(MediaFilter.allCases) { filter in
                     Label(filter.rawValue, systemImage: icon(for: filter))
                         .tag(filter)
@@ -61,6 +74,18 @@ struct LibraryShellView: View {
                 }
                 .buttonStyle(.plain)
             }
+            Section("Artwork") {
+                Button {
+                    Task { await appState.findMissingArtwork() }
+                } label: {
+                    Label(
+                        appState.isMatchingArtwork ? "Finding Artwork…" : "Get Missing Artwork",
+                        systemImage: "sparkles.rectangle.stack"
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(appState.isMatchingArtwork)
+            }
             Spacer()
             Button {
                 appState.showsSettings = true
@@ -70,6 +95,8 @@ struct LibraryShellView: View {
             .buttonStyle(.plain)
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(.ultraThinMaterial)
         .safeAreaInset(edge: .bottom) {
             if controller.isConnected {
                 Label("Controller connected", systemImage: "gamecontroller.fill")
@@ -127,10 +154,10 @@ struct LibraryHomeView: View {
 
     var body: some View {
         ZStack {
-            ShelfTheme.background.ignoresSafeArea()
+            ShelfTheme.ambientBackground.ignoresSafeArea()
             ScrollViewReader { pageProxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 34) {
+                    LazyVStack(alignment: .leading, spacing: 40) {
                         header
                         if appState.searchText.isEmpty && appState.selectedFilter == .all {
                             hero
@@ -211,6 +238,10 @@ struct LibraryHomeView: View {
             }
         }
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(appState.selectedFilter == .all ? "MediaShelf" : appState.selectedFilter.rawValue)
+                    .font(.system(size: 15, weight: .semibold))
+            }
             ToolbarItemGroup {
                 Button {
                     Task { await appState.refreshAll() }
@@ -261,7 +292,7 @@ struct LibraryHomeView: View {
         HStack(alignment: .center, spacing: 20) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(appState.selectedFilter == .all ? "MediaShelf" : appState.selectedFilter.rawValue)
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .font(.system(size: 32, weight: .semibold))
                 Text("\(appState.media.count) videos • \(appState.libraries.count) \(appState.libraries.count == 1 ? "folder" : "folders")")
                     .foregroundStyle(ShelfTheme.textSecondary)
             }
@@ -286,9 +317,10 @@ struct LibraryHomeView: View {
                 }
             }
             .padding(.horizontal, 13)
-            .padding(.vertical, 9)
-            .background(Color.white.opacity(0.09))
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .overlay { Capsule().stroke(ShelfTheme.hairline) }
         }
         .padding(.horizontal, 34)
         .padding(.top, 22)
@@ -303,17 +335,18 @@ struct LibraryHomeView: View {
                     title: item.displayTitle,
                     isBackdrop: true
                 )
-                .frame(height: 390)
+                .frame(height: 500)
+                .clipped()
                 .overlay {
                     LinearGradient(
-                        colors: [.clear, ShelfTheme.background.opacity(0.32), ShelfTheme.background],
+                        colors: [.clear, ShelfTheme.canvas.opacity(0.15), ShelfTheme.canvas],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 }
                 .overlay {
                     LinearGradient(
-                        colors: [ShelfTheme.background.opacity(0.92), .clear],
+                        colors: [ShelfTheme.canvas.opacity(0.98), ShelfTheme.canvas.opacity(0.55), .clear],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -324,11 +357,13 @@ struct LibraryHomeView: View {
                         .tracking(2.4)
                         .foregroundStyle(ShelfTheme.accent)
                     Text(item.displayTitle)
-                        .font(.system(size: 42, weight: .bold, design: .rounded))
+                        .font(.system(size: 52, weight: .semibold))
+                        .tracking(-1.2)
                         .lineLimit(2)
                     if let summary = item.summary {
                         Text(summary)
-                            .foregroundStyle(Color.white.opacity(0.78))
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.white.opacity(0.72))
                             .lineLimit(3)
                             .frame(maxWidth: 520, alignment: .leading)
                     }
@@ -359,10 +394,17 @@ struct LibraryHomeView: View {
                         .scaleEffect(focusedCardID == "hero::details" ? 1.06 : 1)
                     }
                 }
-                .padding(38)
+                .padding(.horizontal, 46)
+                .padding(.bottom, 46)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .padding(.horizontal, 34)
+            .overlay(alignment: .top) {
+                LinearGradient(
+                    colors: [ShelfTheme.canvas.opacity(0.48), .clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 90)
+            }
         }
     }
 
@@ -539,8 +581,13 @@ struct MediaShelfRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(.title2.weight(.bold))
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.system(size: 23, weight: .semibold))
+                Text("\(items.count)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(ShelfTheme.textTertiary)
+            }
                 .padding(.horizontal, 34)
             shelfScroller
         }

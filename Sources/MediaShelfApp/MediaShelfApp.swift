@@ -43,6 +43,11 @@ struct MediaShelfApp: App {
                     Task { await appState.refreshAll() }
                 }
                 .keyboardShortcut("r", modifiers: [.command])
+                Button("Get Missing Artwork") {
+                    Task { await appState.findMissingArtwork() }
+                }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+                .disabled(appState.isMatchingArtwork)
                 Divider()
                 Button("Settings…") {
                     appState.showsSettings = true

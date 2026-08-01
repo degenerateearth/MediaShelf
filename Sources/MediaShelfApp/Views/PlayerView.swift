@@ -92,6 +92,8 @@ struct PlayerView: View {
     @State private var scrubPosition: Double = 0
     @State private var isScrubbing = false
     @State private var didFinishPlayback = false
+    @State private var seekFeedback: String?
+    @State private var controlHideTask: Task<Void, Never>?
 
     init(appState: AppState, controller: ControllerManager, item: MediaItem) {
         self.appState = appState
@@ -113,12 +115,24 @@ struct PlayerView: View {
                 controlsOverlay
                     .transition(.opacity)
             }
+            if let seekFeedback {
+                Text(seekFeedback)
+                    .font(.system(size: 18, weight: .semibold))
+                    .monospacedDigit()
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
         }
         .frame(minWidth: 900, minHeight: 600)
         .onAppear {
             session.start()
+            scheduleControlsAutoHide()
         }
         .onDisappear {
+            controlHideTask?.cancel()
             if !didFinishPlayback {
                 saveProgress()
             }
@@ -128,6 +142,14 @@ struct PlayerView: View {
             if time - lastSavedAt >= 10 {
                 lastSavedAt = time
                 saveProgress()
+            }
+        }
+        .onChange(of: session.isPlaying) { isPlaying in
+            if isPlaying {
+                scheduleControlsAutoHide()
+            } else {
+                controlHideTask?.cancel()
+                withAnimation(.easeOut(duration: 0.16)) { showsControls = true }
             }
         }
         .onChange(of: session.didReachEnd) { didReachEnd in
@@ -151,26 +173,43 @@ struct PlayerView: View {
             switch action {
             case .playPause, .select:
                 session.togglePlayback()
+                revealControls()
             case .left:
                 session.jump(by: -10)
+                showSeekFeedback("−10 seconds")
+                revealControls()
             case .right:
                 session.jump(by: 10)
+                showSeekFeedback("+10 seconds")
+                revealControls()
             case .seekBackward:
                 session.jump(by: -5)
-                showsControls = true
+                showSeekFeedback("Rewinding  •  \(timestamp(max(session.currentTime - 5, 0)))")
+                revealControls()
             case .seekForward:
                 session.jump(by: 5)
-                showsControls = true
+                showSeekFeedback("Fast-forwarding  •  \(timestamp(session.currentTime + 5))")
+                revealControls()
             case .back:
                 appState.playingItem = nil
             case .menu:
-                withAnimation { showsControls.toggle() }
+                if showsControls {
+                    controlHideTask?.cancel()
+                    withAnimation { showsControls = false }
+                } else {
+                    revealControls()
+                }
             case .up, .down:
-                showsControls = true
+                revealControls()
             }
         }
         .onTapGesture {
-            withAnimation { showsControls.toggle() }
+            if showsControls {
+                controlHideTask?.cancel()
+                withAnimation { showsControls = false }
+            } else {
+                revealControls()
+            }
         }
     }
 
@@ -179,7 +218,7 @@ struct PlayerView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.displayTitle)
-                        .font(.title2.bold())
+                        .font(.system(size: 24, weight: .semibold))
                     if item.kind == .episode {
                         Text("\(item.episodeCode) • \(item.effectiveEpisodeTitle)")
                             .foregroundStyle(Color.white.opacity(0.72))
@@ -189,7 +228,7 @@ struct PlayerView: View {
                 Button {
                     appState.playingItem = nil
                 } label: {
-                    Label("Back to Details", systemImage: "chevron.left.circle.fill")
+                    Label("Back", systemImage: "chevron.left")
                 }
                 .buttonStyle(SecondaryButtonStyle())
                 .keyboardShortcut(.cancelAction)
@@ -226,7 +265,7 @@ struct PlayerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             Spacer()
-            VStack(spacing: 14) {
+            VStack(spacing: 16) {
                 Slider(
                     value: Binding(
                         get: { isScrubbing ? scrubPosition : session.currentTime },
@@ -238,15 +277,17 @@ struct PlayerView: View {
                     in: 0...max(session.duration, 1),
                     onEditingChanged: { editing in
                         if editing {
+                            controlHideTask?.cancel()
                             scrubPosition = session.currentTime
                             isScrubbing = true
                         } else {
                             session.seek(to: scrubPosition)
                             isScrubbing = false
+                            scheduleControlsAutoHide()
                         }
                     }
                 )
-                .tint(ShelfTheme.accent)
+                .tint(.white)
                 HStack {
                     Text(timestamp(isScrubbing ? scrubPosition : session.currentTime))
                         .monospacedDigit()
@@ -254,18 +295,24 @@ struct PlayerView: View {
                     Button {
                         session.jump(by: -10)
                     } label: {
-                        Label("Back 10", systemImage: "gobackward.10")
+                        Image(systemName: "gobackward.10")
+                            .font(.title3)
                     }
                     Button {
                         session.togglePlayback()
                     } label: {
                         Image(systemName: session.isPlaying ? "pause.fill" : "play.fill")
                             .font(.title2)
+                            .frame(width: 48, height: 48)
+                            .background(Color.white)
+                            .foregroundStyle(.black)
+                            .clipShape(Circle())
                     }
                     Button {
                         session.jump(by: 10)
                     } label: {
-                        Label("Forward 10", systemImage: "goforward.10")
+                        Image(systemName: "goforward.10")
+                            .font(.title3)
                     }
                     Spacer()
                     Text("-\(timestamp(max(session.duration - (isScrubbing ? scrubPosition : session.currentTime), 0)))")
@@ -276,7 +323,7 @@ struct PlayerView: View {
             .padding(28)
             .background(
                 LinearGradient(
-                    colors: [.clear, .black.opacity(0.84)],
+                    colors: [.clear, .black.opacity(0.94)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -303,5 +350,33 @@ struct PlayerView: View {
             return String(format: "%d:%02d:%02d", hours, minutes, remaining)
         }
         return String(format: "%d:%02d", minutes, remaining)
+    }
+
+    private func showSeekFeedback(_ message: String) {
+        withAnimation(.easeOut(duration: 0.14)) { seekFeedback = message }
+        Task {
+            try? await Task.sleep(nanoseconds: 850_000_000)
+            await MainActor.run {
+                withAnimation(.easeIn(duration: 0.18)) { seekFeedback = nil }
+            }
+        }
+    }
+
+    private func revealControls() {
+        withAnimation(.easeOut(duration: 0.16)) { showsControls = true }
+        scheduleControlsAutoHide()
+    }
+
+    private func scheduleControlsAutoHide() {
+        controlHideTask?.cancel()
+        guard session.isPlaying, session.errorMessage == nil, !isScrubbing else { return }
+        controlHideTask = Task {
+            try? await Task.sleep(nanoseconds: 3_200_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard session.isPlaying, !isScrubbing, session.errorMessage == nil else { return }
+                withAnimation(.easeInOut(duration: 0.22)) { showsControls = false }
+            }
+        }
     }
 }

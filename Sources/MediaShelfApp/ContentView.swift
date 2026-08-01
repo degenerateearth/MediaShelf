@@ -30,16 +30,18 @@ struct ContentView: View {
                 }
             }
             if appState.isBusy {
-                VStack(spacing: 12) {
-                    ProgressView()
-                        .controlSize(.large)
+                HStack(spacing: 10) {
+                    ProgressView().controlSize(.small)
                     Text(appState.activityText)
-                        .font(.headline)
+                        .font(.subheadline.weight(.semibold))
                 }
-                .padding(26)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
                 .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(radius: 25)
+                .clipShape(Capsule())
+                .overlay { Capsule().stroke(ShelfTheme.hairline) }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(22)
             }
         }
         .preferredColorScheme(.dark)
@@ -48,6 +50,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $appState.showsSettings) {
             SettingsView(appState: appState, controller: controller)
+        }
+        .sheet(isPresented: $appState.showsArtworkReview) {
+            ArtworkMatchView(appState: appState)
         }
         .alert(
             "MediaShelf",

@@ -10,8 +10,14 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Settings")
-                    .font(.largeTitle.bold())
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("SETTINGS")
+                        .font(.caption2.weight(.bold))
+                        .tracking(2.2)
+                        .foregroundStyle(ShelfTheme.accent)
+                    Text("MediaShelf")
+                        .font(.system(size: 30, weight: .semibold))
+                }
                 Spacer()
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.defaultAction)
@@ -111,7 +117,7 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
         }
         .frame(minWidth: 690, minHeight: 650)
-        .background(ShelfTheme.background)
+        .background(ShelfTheme.ambientBackground)
         .confirmationDialog(
             "Remove \(libraryToRemove?.displayName ?? "this folder") from MediaShelf?",
             isPresented: Binding(

@@ -1,11 +1,27 @@
 import SwiftUI
 
 enum ShelfTheme {
-    static let background = Color(red: 0.025, green: 0.035, blue: 0.055)
-    static let elevated = Color(red: 0.075, green: 0.09, blue: 0.12)
-    static let accent = Color(red: 0.20, green: 0.78, blue: 0.72)
-    static let secondaryAccent = Color(red: 0.38, green: 0.48, blue: 0.98)
-    static let textSecondary = Color.white.opacity(0.66)
+    static let canvas = Color(red: 0.018, green: 0.022, blue: 0.030)
+    static let background = canvas
+    static let surface = Color(red: 0.050, green: 0.057, blue: 0.071)
+    static let surfaceRaised = Color(red: 0.075, green: 0.084, blue: 0.102)
+    static let elevated = surfaceRaised
+    static let accent = Color(red: 0.29, green: 0.82, blue: 0.76)
+    static let secondaryAccent = Color(red: 0.39, green: 0.46, blue: 0.92)
+    static let textPrimary = Color.white.opacity(0.96)
+    static let textSecondary = Color.white.opacity(0.67)
+    static let textTertiary = Color.white.opacity(0.43)
+    static let hairline = Color.white.opacity(0.10)
+
+    static let ambientBackground = LinearGradient(
+        colors: [
+            Color(red: 0.035, green: 0.043, blue: 0.060),
+            canvas,
+            Color(red: 0.016, green: 0.020, blue: 0.028),
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
@@ -13,19 +29,19 @@ struct PrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 11)
-            .background(ShelfTheme.accent.opacity(configuration.isPressed ? 0.75 : 1))
-            .foregroundStyle(Color.black.opacity(0.88))
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .font(.system(size: 15, weight: .semibold))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(configuration.isPressed ? 0.80 : 0.96))
+            .foregroundStyle(Color.black.opacity(0.92))
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isFocused ? Color.white : .clear, lineWidth: 3)
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(isFocused ? Color.white : .clear, lineWidth: 2)
             }
-            .shadow(color: isFocused ? ShelfTheme.accent.opacity(0.55) : .clear, radius: 13)
-            .scaleEffect(configuration.isPressed ? 0.97 : (isFocused ? 1.06 : 1))
-            .animation(.easeOut(duration: 0.14), value: isFocused)
+            .shadow(color: .black.opacity(isFocused ? 0.42 : 0.20), radius: isFocused ? 18 : 8, y: 7)
+            .scaleEffect(configuration.isPressed ? 0.98 : (isFocused ? 1.035 : 1))
+            .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isFocused)
     }
 }
 
@@ -34,18 +50,20 @@ struct SecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color.white.opacity(configuration.isPressed ? 0.18 : 0.10))
+            .font(.system(size: 15, weight: .semibold))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(configuration.isPressed ? 0.20 : 0.115))
             .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isFocused ? ShelfTheme.accent : Color.white.opacity(0.12), lineWidth: isFocused ? 3 : 1)
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(isFocused ? Color.white.opacity(0.92) : ShelfTheme.hairline, lineWidth: isFocused ? 2 : 1)
             )
-            .shadow(color: isFocused ? ShelfTheme.accent.opacity(0.45) : .clear, radius: 13)
-            .scaleEffect(configuration.isPressed ? 0.97 : (isFocused ? 1.06 : 1))
-            .animation(.easeOut(duration: 0.14), value: isFocused)
+            .shadow(color: .black.opacity(isFocused ? 0.38 : 0.14), radius: isFocused ? 17 : 7, y: 6)
+            .scaleEffect(configuration.isPressed ? 0.98 : (isFocused ? 1.035 : 1))
+            .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isFocused)
     }
 }
+
+typealias PremiumSecondaryButtonStyle = SecondaryButtonStyle

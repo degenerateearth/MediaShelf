@@ -6,6 +6,7 @@ struct DetailsView: View {
     @ObservedObject var controller: ControllerManager
     let originalItem: MediaItem
     @State private var showsEditor = false
+    @State private var selectedSeason: Int?
     @FocusState private var focusedEpisodeID: String?
 
     private var item: MediaItem {
@@ -24,9 +25,18 @@ struct DetailsView: View {
             }
     }
 
+    private var seasons: [Int] {
+        Array(Set(siblingEpisodes.map { $0.seasonNumber ?? 0 })).sorted()
+    }
+
+    private var visibleEpisodes: [MediaItem] {
+        guard let selectedSeason else { return siblingEpisodes }
+        return siblingEpisodes.filter { ($0.seasonNumber ?? 0) == selectedSeason }
+    }
+
     var body: some View {
         ZStack {
-            ShelfTheme.background.ignoresSafeArea()
+            ShelfTheme.ambientBackground.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     hero
@@ -59,6 +69,11 @@ struct DetailsView: View {
         .sheet(isPresented: $showsEditor) {
             MetadataEditorView(appState: appState, item: item)
         }
+        .onAppear {
+            if selectedSeason == nil {
+                selectedSeason = item.seasonNumber ?? seasons.first
+            }
+        }
         .onChange(of: controller.actionRevision) { _ in
             guard let action = controller.lastAction else { return }
             switch action {
@@ -86,7 +101,7 @@ struct DetailsView: View {
                 title: item.displayTitle,
                 isBackdrop: true
             )
-            .frame(height: 560)
+            .frame(height: 600)
             .overlay {
                 LinearGradient(
                     colors: [.clear, ShelfTheme.background.opacity(0.30), ShelfTheme.background],
@@ -141,7 +156,8 @@ struct DetailsView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(ShelfTheme.textSecondary)
                     Text(item.displayTitle)
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .font(.system(size: 52, weight: .semibold))
+                        .tracking(-1.2)
                         .lineLimit(2)
                     if item.kind == .episode {
                         Text("\(item.episodeCode) • \(item.effectiveEpisodeTitle)")
@@ -227,19 +243,25 @@ struct DetailsView: View {
 
     private var episodeBrowser: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Episodes")
-                .font(.title.bold())
-            ForEach(Array(Dictionary(grouping: siblingEpisodes, by: { $0.seasonNumber ?? 0 }).keys.sorted()), id: \.self) { season in
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Season \(season)")
-                        .font(.title2.bold())
-                    ForEach(siblingEpisodes.filter { ($0.seasonNumber ?? 0) == season }) { episode in
-                        EpisodeRow(
-                            item: episode,
-                            focusedEpisode: $focusedEpisodeID
-                        ) {
-                            appState.playingItem = episode
-                        }
+            HStack {
+                Text("Episodes")
+                    .font(.system(size: 28, weight: .semibold))
+                Spacer()
+                Picker("Season", selection: $selectedSeason) {
+                    ForEach(seasons, id: \.self) { season in
+                        Text("Season \(season)").tag(Optional(season))
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 150)
+            }
+            LazyVStack(spacing: 12) {
+                ForEach(visibleEpisodes) { episode in
+                    EpisodeRow(
+                        item: episode,
+                        focusedEpisode: $focusedEpisodeID
+                    ) {
+                        appState.playingItem = episode
                     }
                 }
             }
@@ -303,11 +325,11 @@ private struct EpisodeRow: View {
                     .foregroundStyle(ShelfTheme.accent)
             }
             .padding(12)
-            .background(Color.white.opacity(isFocused ? 0.13 : 0.06))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(isFocused ? ShelfTheme.surfaceRaised : ShelfTheme.surface.opacity(0.78))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(isFocused ? ShelfTheme.accent : .clear, lineWidth: 3)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(isFocused ? Color.white.opacity(0.88) : ShelfTheme.hairline, lineWidth: isFocused ? 2 : 1)
             }
         }
         .buttonStyle(.plain)

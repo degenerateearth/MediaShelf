@@ -24,9 +24,9 @@ struct ArtworkView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    ShelfTheme.secondaryAccent.opacity(0.72),
-                    ShelfTheme.accent.opacity(0.38),
-                    ShelfTheme.background
+                    ShelfTheme.surfaceRaised,
+                    ShelfTheme.surface,
+                    ShelfTheme.canvas
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -40,7 +40,8 @@ struct ArtworkView: View {
                     .font(.system(size: isBackdrop ? 42 : 28, weight: .light))
                     .foregroundStyle(Color.white.opacity(0.72))
                 Text(title.uppercased())
-                    .font(.system(size: isBackdrop ? 30 : 17, weight: .bold, design: .rounded))
+                    .font(.system(size: isBackdrop ? 28 : 15, weight: .semibold))
+                    .tracking(isBackdrop ? 1.2 : 0.5)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .minimumScaleFactor(0.65)
@@ -66,11 +67,11 @@ struct PosterCard: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 9) {
+                VStack(alignment: .leading, spacing: 8) {
                 ZStack(alignment: .bottomLeading) {
                     ArtworkView(path: item.posterPath ?? item.thumbnailPath, title: item.displayTitle)
                         .frame(width: 178, height: 267)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                     if item.isWatched {
                         Image(systemName: "checkmark.circle.fill")
@@ -96,20 +97,20 @@ struct PosterCard: View {
                     }
                 }
                 .overlay {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .stroke(
-                            isHighlighted ? ShelfTheme.accent : Color.white.opacity(0.08),
-                            lineWidth: isHighlighted ? 4 : 1
+                            isHighlighted ? Color.white.opacity(0.92) : Color.white.opacity(0.07),
+                            lineWidth: isHighlighted ? 2 : 1
                         )
                 }
                 .shadow(
-                    color: isHighlighted ? ShelfTheme.accent.opacity(0.28) : .black.opacity(0.28),
-                    radius: isHighlighted ? 18 : 10,
-                    y: 6
+                    color: .black.opacity(isHighlighted ? 0.62 : 0.32),
+                    radius: isHighlighted ? 24 : 12,
+                    y: isHighlighted ? 12 : 7
                 )
 
                 Text(item.displayTitle)
-                    .font(.headline)
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Text(subtitle)
@@ -118,8 +119,9 @@ struct PosterCard: View {
                     .lineLimit(1)
             }
             .frame(width: 178, alignment: .leading)
-            .scaleEffect(isHighlighted ? 1.045 : 1)
-            .animation(.easeOut(duration: 0.16), value: isHighlighted)
+            .brightness(isHighlighted ? 0.035 : 0)
+            .scaleEffect(isHighlighted ? 1.04 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.84), value: isHighlighted)
         }
         .buttonStyle(.plain)
         .focusable()

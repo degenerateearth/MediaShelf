@@ -10,6 +10,14 @@ struct GenreShelf: Identifiable {
     var id: String { name.lowercased() }
 }
 
+struct ArtworkMatchReview: Identifiable {
+    let id = UUID()
+    let title: String
+    let items: [MediaItem]
+    let kind: MediaKind
+    let candidates: [MetadataMatch]
+}
+
 @MainActor
 final class AppState: ObservableObject {
     let paths: PortablePaths
@@ -31,6 +39,8 @@ final class AppState: ObservableObject {
     @Published var selectedItem: MediaItem?
     @Published var playingItem: MediaItem?
     @Published var showsSettings = false
+    @Published var showsArtworkReview = false
+    @Published var artworkReviews: [ArtworkMatchReview] = []
     @Published var automaticArtwork = true
     @Published var sidebarVisibility: NavigationSplitViewVisibility = .detailOnly
 
@@ -259,6 +269,67 @@ final class AppState: ObservableObject {
         if enabled {
             startArtworkEnrichment()
         }
+    }
+
+    func findMissingArtwork() async {
+        guard !isMatchingArtwork else { return }
+        isMatchingArtwork = true
+        activityText = "Finding missing artwork…"
+        artworkReviews = []
+
+        var groups: [([MediaItem], String, Int?, MediaKind)] = media
+            .filter { $0.kind == .movie && !$0.manualPoster && $0.posterPath == nil }
+            .map { ([$0], $0.displayTitle, $0.year, .movie) }
+        let shows = Dictionary(grouping: media.filter {
+            $0.kind == .episode && !$0.manualPoster && $0.posterPath == nil
+        }) { $0.displayTitle.normalizedForGrouping }
+        groups.append(contentsOf: shows.values.compactMap { episodes in
+            guard let first = episodes.first else { return nil }
+            return (episodes, first.displayTitle, first.year, .episode)
+        })
+
+        for (items, title, year, kind) in groups {
+            do {
+                if let match = try await metadataProvider.bestMatch(
+                    title: title,
+                    year: year,
+                    kind: kind
+                ) {
+                    await apply(match: match, to: items, kind: kind)
+                } else {
+                    let candidates = try await metadataProvider.candidates(
+                        title: title,
+                        kind: kind
+                    )
+                    if !candidates.isEmpty {
+                        artworkReviews.append(.init(
+                            title: title,
+                            items: items,
+                            kind: kind,
+                            candidates: candidates
+                        ))
+                    }
+                }
+            } catch {
+                // Keep artwork recovery best-effort when offline.
+            }
+        }
+        try? await reload()
+        activityText = ""
+        isMatchingArtwork = false
+        showsArtworkReview = !artworkReviews.isEmpty
+    }
+
+    func selectArtworkMatch(_ match: MetadataMatch, for review: ArtworkMatchReview) async {
+        await apply(match: match, to: review.items, kind: review.kind)
+        artworkReviews.removeAll { $0.id == review.id }
+        try? await reload()
+        showsArtworkReview = !artworkReviews.isEmpty
+    }
+
+    func skipArtworkReview(_ review: ArtworkMatchReview) {
+        artworkReviews.removeAll { $0.id == review.id }
+        showsArtworkReview = !artworkReviews.isEmpty
     }
 
     func toggleFavorite(_ item: MediaItem) async {
@@ -546,53 +617,56 @@ final class AppState: ObservableObject {
                 title: queryTitle,
                 year: year,
                 kind: kind
-            ), let representative = group.first else { return }
-
-            var posterPath: String?
-            var backdropPath: String?
-            if let posterURL = match.posterURL {
-                posterPath = try? await metadataArtworkService.download(
-                    from: posterURL,
-                    mediaID: representative.id,
-                    kind: kind,
-                    role: .poster
-                ).path
-            }
-            if let backdropURL = match.backdropURL {
-                backdropPath = try? await metadataArtworkService.download(
-                    from: backdropURL,
-                    mediaID: representative.id,
-                    kind: kind,
-                    role: .backdrop
-                ).path
-            }
-
-            for item in group {
-                try await database.applyProviderMetadata(
-                    mediaID: item.id,
-                    summary: match.summary,
-                    genre: match.genres.joined(separator: ", ").nonEmpty,
-                    year: match.year
-                )
-                if let posterPath, !item.manualPoster {
-                    try await database.setArtwork(
-                        mediaID: item.id,
-                        role: .poster,
-                        path: posterPath,
-                        manual: false
-                    )
-                }
-                if let backdropPath, !item.manualBackdrop {
-                    try await database.setArtwork(
-                        mediaID: item.id,
-                        role: .backdrop,
-                        path: backdropPath,
-                        manual: false
-                    )
-                }
-            }
+            ) else { return }
+            await apply(match: match, to: group, kind: kind)
         } catch {
             // Online artwork is best-effort. Offline use remains silent and fully functional.
+        }
+    }
+
+    private func apply(match: MetadataMatch, to group: [MediaItem], kind: MediaKind) async {
+        guard let representative = group.first else { return }
+        var posterPath: String?
+        var backdropPath: String?
+        if let posterURL = match.posterURL {
+            posterPath = try? await metadataArtworkService.download(
+                from: posterURL,
+                mediaID: representative.id,
+                kind: kind,
+                role: .poster
+            ).path
+        }
+        if let backdropURL = match.backdropURL {
+            backdropPath = try? await metadataArtworkService.download(
+                from: backdropURL,
+                mediaID: representative.id,
+                kind: kind,
+                role: .backdrop
+            ).path
+        }
+        for item in group {
+            try? await database.applyProviderMetadata(
+                mediaID: item.id,
+                summary: match.summary,
+                genre: match.genres.joined(separator: ", ").nonEmpty,
+                year: match.year
+            )
+            if let posterPath, !item.manualPoster {
+                try? await database.setArtwork(
+                    mediaID: item.id,
+                    role: .poster,
+                    path: posterPath,
+                    manual: false
+                )
+            }
+            if let backdropPath, !item.manualBackdrop {
+                try? await database.setArtwork(
+                    mediaID: item.id,
+                    role: .backdrop,
+                    path: backdropPath,
+                    manual: false
+                )
+            }
         }
     }
 }

@@ -31,6 +31,7 @@ public struct MetadataMatch: Sendable {
 public protocol MetadataProvider: Sendable {
     var name: String { get }
     func bestMatch(title: String, year: Int?, kind: MediaKind) async throws -> MetadataMatch?
+    func candidates(title: String, kind: MediaKind) async throws -> [MetadataMatch]
 }
 
 public struct CinemetaMetadataProvider: MetadataProvider {
@@ -48,32 +49,7 @@ public struct CinemetaMetadataProvider: MetadataProvider {
     ) async throws -> MetadataMatch? {
         let type = kind == .movie ? "movie" : "series"
         for queryTitle in Self.queryTitles(for: title) {
-            guard let encoded = queryTitle.addingPercentEncoding(
-                withAllowedCharacters: .urlPathAllowed
-            ), let url = URL(
-                string: "https://v3-cinemeta.strem.io/catalog/\(type)/top/search=\(encoded).json"
-            ) else { continue }
-
-            var request = URLRequest(url: url)
-            request.timeoutInterval = 12
-            request.setValue("MediaShelf/1.0", forHTTPHeaderField: "User-Agent")
-            let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse,
-                  200..<300 ~= http.statusCode
-            else { continue }
-
-            let payload = try JSONDecoder().decode(CatalogResponse.self, from: data)
-            let candidates = payload.metas.map {
-                MetadataMatch(
-                    providerID: $0.id,
-                    title: $0.name,
-                    year: Self.extractYear($0.releaseInfo),
-                    summary: $0.description,
-                    genres: $0.genres ?? [],
-                    posterURL: $0.poster.flatMap(URL.init(string:)),
-                    backdropURL: $0.background.flatMap(URL.init(string:))
-                )
-            }
+            let candidates = try await search(queryTitle, type: type)
             if let match = Self.selectExactMatch(
                 candidates,
                 titles: Self.queryTitles(for: title),
@@ -83,6 +59,38 @@ public struct CinemetaMetadataProvider: MetadataProvider {
             }
         }
         return nil
+    }
+
+    public func candidates(title: String, kind: MediaKind) async throws -> [MetadataMatch] {
+        let type = kind == .movie ? "movie" : "series"
+        let results = try await search(title, type: type)
+        let expected = Set(Self.queryTitles(for: title).map(\.normalizedForMatching))
+        return results.filter { expected.contains($0.title.normalizedForMatching) }
+    }
+
+    private func search(_ title: String, type: String) async throws -> [MetadataMatch] {
+        guard let encoded = title.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              let url = URL(
+                string: "https://v3-cinemeta.strem.io/catalog/\(type)/top/search=\(encoded).json"
+              ) else { return [] }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 12
+        request.setValue("MediaShelf/1.0", forHTTPHeaderField: "User-Agent")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse,
+              200..<300 ~= http.statusCode else { return [] }
+        let payload = try JSONDecoder().decode(CatalogResponse.self, from: data)
+        return payload.metas.map {
+            MetadataMatch(
+                providerID: $0.id,
+                title: $0.name,
+                year: Self.extractYear($0.releaseInfo),
+                summary: $0.description,
+                genres: $0.genres ?? [],
+                posterURL: $0.poster.flatMap(URL.init(string:)),
+                backdropURL: $0.background.flatMap(URL.init(string:))
+            )
+        }
     }
 
     static func queryTitles(for title: String) -> [String] {
