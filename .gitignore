@@ -12,6 +12,8 @@ Test Media/**/*.mkv
 Test Media/**/*.m4v
 Test Media/**/*.mov
 screenshots/*.png
+!screenshots/MediaShelf-hero.png
 work/
 work-*.png
+.tools/
 .DS_Store

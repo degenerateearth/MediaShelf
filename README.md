@@ -1,66 +1,134 @@
-# MediaShelf
+<p align="center">
+  <img src="Resources/AppIcon.png" width="128" alt="MediaShelf icon">
+</p>
 
-MediaShelf is a native Intel macOS application for browsing and playing a local
-movie and television library directly from an external drive. It is designed to
-feel like a private streaming service without a server, account, subscription,
-or mandatory internet connection.
+<h1 align="center">MediaShelf</h1>
 
-## What works
+<p align="center">
+  <strong>Your movies. Your drive. Your private streaming service.</strong>
+</p>
 
-- Portable SQLite library stored in `MediaShelf Data` beside the app.
-- One or more security-scoped library folders.
-- Recursive MP4, MKV, M4V, and MOV discovery.
-- Movie and `S01E01` / `1x01` television filename parsing.
-- TV show, season, and episode grouping.
-- One card per TV series; seasons and episodes live inside the series page.
-- Continue Watching, Movies, TV Shows, and automatic genre rails in that order.
-- Streaming-style home, details, search, sort, and filter interfaces.
-- Continue Watching, watched state, recently added, and favorites.
-- Manual metadata editing that survives rescans.
-- Local, manual, drag-and-drop, cached online, and generated placeholder art.
-- Conservative no-key poster/backdrop matching through an optional provider:
-  exact normalized title, exact year when known, and no guessing on ambiguity.
-- Manual artwork always has priority and is never overwritten.
-- Native playback, resume, frequent progress saves, and a configurable 90% watched threshold.
-- Xbox controller navigation through Apple's GameController framework, with the
-  sidebar hidden by default and available from the B button.
-- Automatic next-episode playback when a TV episode finishes.
-- Portable database backups before schema migration.
-- No media rename, move, rewrite, or deletion paths.
+<p align="center">
+  Turn an external drive into a polished, portable movie and TV library—without a server, account, subscription, or cloud.
+</p>
 
-## Requirements
+<p align="center">
+  <a href="https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf-macOS-Intel.zip"><strong>Download MediaShelf for Intel Mac</strong></a>
+  ·
+  <a href="#build-from-source">Build from source</a>
+  ·
+  <a href="docs/PRIVACY.md">Privacy</a>
+</p>
+
+![MediaShelf home screen](screenshots/MediaShelf-hero.png)
+
+## A streaming experience for the media you already own
+
+MediaShelf makes a folder of video files feel like a real living-room product. Point it at your library and it organizes movies, shows, seasons, and episodes into a cinematic interface with artwork, continue watching, automatic next-episode playback, and full Xbox controller navigation.
+
+The unusual part is what MediaShelf does **not** require: there is no media server to maintain, no Docker stack, no account to create, no subscription to renew, and no library database stranded on one computer. Put MediaShelf on the same external drive as your collection and its database, artwork, settings, and playback progress travel with it.
+
+## Why MediaShelf
+
+| | |
+|---|---|
+| **Portable by design** | The app and `MediaShelf Data` folder live together on your external drive. Move the drive, keep the library. |
+| **Actually private** | Your media stays local. Internet access is optional and used only to retrieve artwork and metadata. |
+| **TV done properly** | Episodes collapse into one show entry, then open into season and episode pickers instead of flooding the library. |
+| **Made for the couch** | Navigate, open the sidebar, play, pause, seek, and scrub with an Xbox controller. |
+| **Broad playback** | The packaged build includes its playback stack for MP4, MKV, M4V, and MOV—no separate codec troubleshooting. |
+| **Safe around your files** | MediaShelf indexes media; it never renames, moves, rewrites, or deletes the originals. |
+
+## Highlights
+
+- Premium, native macOS interface with a cinematic featured title and responsive content rails
+- Continue Watching kept first, followed by Movies, TV Shows, and automatically generated genre sections
+- One Continue Watching entry per series, always tracking the furthest episode watched
+- Automatic next-episode playback and watched-state cleanup at completion
+- Recursive library monitoring so newly added media appears on the next refresh
+- Conservative automatic poster and backdrop matching that refuses ambiguous guesses
+- **Get Missing Artwork** workflow with a visual match chooser when automation is uncertain
+- Manual metadata and artwork overrides that survive rescans
+- Search, sorting, filters, favorites, recently added, and watched/unwatched views
+- Resume playback, timeline scrubbing, elapsed/remaining time, and autosaving progress
+- Portable SQLite storage with automatic backups before schema migrations
+
+## Controller map
+
+| Xbox control | Library | Player |
+|---|---|---|
+| D-pad / left stick | Move focus and scroll rails | Reveal controls; left/right seek 10 seconds |
+| A | Open or select | Play/pause |
+| B | Open sidebar / go back | Return to details |
+| X | — | Play/pause |
+| LT / RT | — | Hold to rewind / fast-forward |
+| Menu | Toggle navigation | Toggle playback controls |
+
+## Download and run
+
+1. Download [`MediaShelf-macOS-Intel.zip`](https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf-macOS-Intel.zip).
+2. Unzip it and copy `MediaShelf.app` to the external drive that will hold your library.
+3. Open MediaShelf and choose one or more media folders.
+4. Let the first scan organize your collection and retrieve artwork.
+
+MediaShelf currently targets **Intel Macs running macOS 13 or newer**. This community build is ad-hoc signed rather than Apple-notarized, so macOS may require a right-click → **Open** on first launch. Never eject the drive while MediaShelf is running; quit the app first.
+
+## Portable layout
+
+On first launch, MediaShelf creates its data folder beside the app:
+
+```text
+External Drive/
+├── MediaShelf.app
+├── MediaShelf Data/
+│   ├── library.sqlite
+│   ├── Artwork/
+│   ├── Backups/
+│   ├── Cache/
+│   ├── Playback/
+│   ├── Settings/
+│   └── Thumbnails/
+└── Movies & TV/
+```
+
+Security-scoped bookmarks grant access only to folders you select. If macOS invalidates a bookmark after moving the drive to another Mac, select the same folder again; the portable database and playback history remain intact.
+
+## Filename tips
+
+MediaShelf understands common movie filenames and TV patterns such as:
+
+```text
+Movies/Alien (1979).mkv
+TV/Dexter/Season 03/Dexter S03E11.mkv
+TV/Vikings/Vikings 1x04.mp4
+```
+
+Clean titles and years improve artwork accuracy. When more than one exact match exists, MediaShelf leaves the item alone and lets you choose through **Get Missing Artwork** instead of silently applying the wrong poster.
+
+## Build from source
+
+Requirements:
 
 - Intel Mac (`x86_64`)
-- macOS 13 or newer
-- Xcode 16 or a Swift 5.10-compatible toolchain for source builds
-
-## Build and test
+- macOS 13+
+- Xcode 16 or a Swift 5.10-compatible toolchain
 
 ```sh
+git clone https://github.com/degenerateearth/MediaShelf.git
+cd MediaShelf
 swift test --arch x86_64
 ./scripts/build-app.sh
 ```
 
-The packaged application is written to `dist/MediaShelf.app`. Put the `.app` on
-an external drive and launch it there. On first launch MediaShelf creates:
+The packaged application is written to `dist/MediaShelf.app`. The build downloads FFmpegKit through Swift Package Manager and embeds the required playback components into the app bundle.
 
-```text
-MediaShelf.app
-MediaShelf Data/
-├── library.sqlite
-├── Artwork/
-├── Backups/
-├── Cache/
-├── Playback/
-├── Settings/
-└── Thumbnails/
-```
+## Project principles
 
-## Data safety
-
-“Remove from Library” removes index records, not video files. The app contains no
-code that deletes, renames, moves, or rewrites media. Manually chosen artwork is
-copied into portable storage; its source file is untouched.
+1. **Local first.** Playback and library management must work without an account or server.
+2. **Never gamble with media.** Index files; do not mutate them.
+3. **Prefer no result to a wrong result.** Metadata automation should surface uncertainty instead of hiding it.
+4. **The couch is a first-class platform.** Every primary journey should work with a controller.
+5. **Portable means the whole experience.** Artwork, progress, settings, and backups belong with the library.
 
 ## Documentation
 
@@ -71,7 +139,10 @@ copied into portable storage; its source file is untouched.
 - [Testing](docs/TESTING.md)
 - [Known limitations](docs/KNOWN_LIMITATIONS.md)
 
+## Status
+
+MediaShelf is an early public release built and tested on Intel macOS. Bug reports and focused contributions are welcome. Please do not include copyrighted media, API credentials, or personal library databases in issues or pull requests.
+
 ## License
 
-MediaShelf source code is available under the MIT License. Artwork and metadata
-returned by optional providers remain subject to their respective terms.
+MediaShelf is available under the [MIT License](LICENSE). Bundled and package-managed playback components retain their respective licenses. Artwork and metadata returned by optional providers remain subject to their providers' terms.
