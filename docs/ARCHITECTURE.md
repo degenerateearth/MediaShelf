@@ -7,7 +7,7 @@ SwiftUI application
 ├── AppState (orchestration)
 ├── Library, detail, editor, settings, and player views
 ├── ControllerManager (GameController)
-└── AVPlayer session
+└── KSPlayer / FFmpeg playback session
         │
 MediaShelfCore
 ├── FilenameParser
@@ -82,7 +82,8 @@ three.
 ## Future extension points
 
 - `MetadataProvider` supports alternate online or local metadata sources.
-- A wide-codec player can replace the native player without changing the library.
+- The player implementation can evolve without changing scanning, metadata, or
+  portable database behavior.
 - The scanner's supported extension set and filename parser are isolated.
 - Controller actions map onto the native focus system, so new screens inherit
   controller navigation.

@@ -132,7 +132,9 @@ The packaged application is written to `dist/MediaShelf.app`. The build download
 
 ## Documentation
 
+- [Contributing](CONTRIBUTING.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Apple Silicon support plan](docs/APPLE_SILICON_PLAN.md)
 - [Playback](docs/PLAYBACK.md)
 - [Portable storage](docs/PORTABILITY.md)
 - [Privacy and online artwork](docs/PRIVACY.md)
@@ -141,7 +143,7 @@ The packaged application is written to `dist/MediaShelf.app`. The build download
 
 ## Status
 
-MediaShelf is an early public release built and tested on Intel macOS. Bug reports and focused contributions are welcome. Please do not include copyrighted media, API credentials, or personal library databases in issues or pull requests.
+MediaShelf is an early public release built and tested on Intel macOS. Bug reports and focused contributions are welcome; please read [CONTRIBUTING.md](CONTRIBUTING.md) first. Do not include copyrighted media, API credentials, cached artwork, private paths, or personal library databases in issues or pull requests.
 
 ## License
 

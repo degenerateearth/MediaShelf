@@ -13,9 +13,13 @@ The current suite covers:
 - movie year extraction;
 - common release-tag removal;
 - `S01E01`, dashed `S02E04`, and `1x03` television formats;
-- SQLite ingest;
-- manual metadata preservation after rescan;
-- playback-progress preservation after rescan.
+- season-pack classification as television rather than movies;
+- recursive scanning and local artwork discovery;
+- SQLite ingest, manual metadata preservation, and playback-progress
+  preservation after rescan;
+- one-series Continue Watching behavior using the furthest episode;
+- strict metadata matching, ambiguity rejection, year checks, and known title
+  aliases.
 
 ## Manual release checklist
 
@@ -45,6 +49,7 @@ The current suite covers:
 ## Test media
 
 `Test Media` contains a copyright-free directory skeleton and filename fixtures.
-Generated media binaries are deliberately ignored by Git. Use
-`scripts/generate-test-media.swift` to produce short local clips when exercising
-the player.
+Generated media binaries are deliberately ignored by Git. From the repository
+root, run `swift scripts/generate-test-media.swift` to produce four short local
+clips when exercising the player. Personal or copyrighted media must not be
+committed or attached to issues.
