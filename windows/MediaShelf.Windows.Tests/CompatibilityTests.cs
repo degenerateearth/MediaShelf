@@ -1,5 +1,7 @@
 namespace MediaShelf.Windows.Tests;
 
+using Xunit;
+
 public sealed class CompatibilityTests
 {
     [Theory]
