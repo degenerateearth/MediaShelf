@@ -23,12 +23,9 @@ jobs:
       - name: Test compatibility contract
         run: dotnet test windows/MediaShelf.Windows.Tests/MediaShelf.Windows.Tests.csproj -c Release
       - name: Publish portable x64 app
-        run: dotnet publish windows/MediaShelf.Windows/MediaShelf.Windows.csproj -c Release -r win-x64 --self-contained true -o dist/MediaShelf-Windows
-      - name: Package
-        shell: pwsh
-        run: Compress-Archive -Path dist/MediaShelf-Windows -DestinationPath dist/MediaShelf-Windows-x64.zip
+        run: dotnet publish windows/MediaShelf.Windows/MediaShelf.Windows.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/MediaShelf-Windows
       - uses: actions/upload-artifact@v4
         with:
           name: MediaShelf-Windows-x64
-          path: dist/MediaShelf-Windows-x64.zip
+          path: dist/MediaShelf-Windows/MediaShelf.exe
           if-no-files-found: error

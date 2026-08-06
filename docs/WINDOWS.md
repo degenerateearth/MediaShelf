@@ -7,16 +7,14 @@ direct FFmpeg-backed playback, seeking, and automatic next-episode playback.
 
 ## Install and run
 
-Download the `MediaShelf-Windows-x64` artifact from the **Windows portable
-build** GitHub Actions workflow, extract it to the external drive, and retain
-the directory name `MediaShelf-Windows`:
+Download `MediaShelf.exe` from the `MediaShelf-Windows-x64` artifact produced
+by the **Windows portable build** GitHub Actions workflow and place it on the
+external drive:
 
 ```text
 External Drive/
 ├── MediaShelf.app
-├── MediaShelf-Windows/
-│   ├── MediaShelf.exe
-│   └── native playback/runtime files
+├── MediaShelf.exe
 ├── MediaShelf Data/
 └── Movies & TV/
 ```
@@ -39,9 +37,10 @@ Install the .NET 8 SDK and run:
 powershell -ExecutionPolicy Bypass -File windows/build-portable.ps1
 ```
 
-The ZIP is written to `dist/MediaShelf-Windows-x64.zip`. The app is
-self-contained and users do not need to install .NET. It is a portable folder,
-not a single binary, because libVLC and its codecs are native DLLs.
+The standalone app is written to `dist/MediaShelf-Windows/MediaShelf.exe`.
+It is self-contained: users do not need to install .NET, VLC, or a codec pack.
+The executable securely extracts its embedded native playback components into
+the current user's temporary application cache when launched.
 
 ## Current gaps
 
