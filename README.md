@@ -15,6 +15,8 @@
 <p align="center">
   <a href="https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf-macOS-Intel.zip"><strong>Download MediaShelf for Intel Mac</strong></a>
   ·
+  <a href="docs/WINDOWS.md">Windows preview</a>
+  ·
   <a href="#build-from-source">Build from source</a>
   ·
   <a href="docs/PRIVACY.md">Privacy</a>
@@ -135,6 +137,7 @@ The packaged application is written to `dist/MediaShelf.app`. The build download
 - [Contributing](CONTRIBUTING.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Apple Silicon support plan](docs/APPLE_SILICON_PLAN.md)
+- [Windows portable preview](docs/WINDOWS.md)
 - [Playback](docs/PLAYBACK.md)
 - [Portable storage](docs/PORTABILITY.md)
 - [Privacy and online artwork](docs/PRIVACY.md)

@@ -482,7 +482,54 @@ final class AppState: ObservableObject {
 
     func reload() async throws {
         libraries = try await database.libraries()
-        media = try await database.allMedia()
+        // `absolute_path` is deliberately only a last-known location. A Windows
+        // scan may have written a drive-letter path, so always prefer the current
+        // Mac library root plus the portable relative path when it exists.
+        let roots = Dictionary(uniqueKeysWithValues: libraries.compactMap { library in
+            let root: URL
+            if let bookmark = library.bookmark,
+               let resolved = try? BookmarkAccess.resolve(bookmark) {
+                root = resolved.url
+            } else {
+                root = URL(fileURLWithPath: library.path)
+            }
+            return FileManager.default.fileExists(atPath: root.path)
+                ? (library.id, root) : nil
+        })
+        media = (try await database.allMedia()).map { stored in
+            var item = stored
+            if let root = roots[item.libraryID] {
+                let relative = item.relativePath
+                    .replacingOccurrences(of: "\\", with: "/")
+                    .split(separator: "/")
+                    .map(String.init)
+                let candidate = relative.reduce(root) { $0.appendingPathComponent($1) }
+                if FileManager.default.fileExists(atPath: candidate.path) {
+                    item.absolutePath = candidate.path
+                }
+            }
+            item.posterPath = resolvedPortableAsset(item.posterPath, beside: item.absolutePath)
+            item.backdropPath = resolvedPortableAsset(item.backdropPath, beside: item.absolutePath)
+            item.thumbnailPath = resolvedPortableAsset(item.thumbnailPath, beside: item.absolutePath)
+            return item
+        }
+    }
+
+    private func resolvedPortableAsset(_ stored: String?, beside mediaPath: String) -> String? {
+        guard let stored else { return nil }
+        if FileManager.default.fileExists(atPath: stored) { return stored }
+        let normalized = stored.replacingOccurrences(of: "\\", with: "/")
+        if let range = normalized.range(of: "/MediaShelf Data/", options: .caseInsensitive) {
+            let relative = normalized[range.upperBound...].split(separator: "/").map(String.init)
+            let candidate = relative.reduce(paths.root) { $0.appendingPathComponent($1) }
+            if FileManager.default.fileExists(atPath: candidate.path) { return candidate.path }
+        }
+        // Local poster/fanart paths are portable with the media directory even
+        // when their last-known absolute path came from Windows.
+        let beside = URL(fileURLWithPath: mediaPath)
+            .deletingLastPathComponent()
+            .appendingPathComponent(URL(fileURLWithPath: stored).lastPathComponent)
+        return FileManager.default.fileExists(atPath: beside.path) ? beside.path : nil
     }
 
     func toggleSidebar() {

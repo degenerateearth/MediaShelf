@@ -1,0 +1,13 @@
+<Application x:Class="MediaShelf.Windows.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Application.Resources>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#090B10"/>
+    <SolidColorBrush x:Key="PanelBrush" Color="#151922"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#E7A43A"/>
+    <Style TargetType="Window"><Setter Property="Background" Value="{StaticResource BackgroundBrush}"/><Setter Property="Foreground" Value="#F4F4F5"/><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+    <Style TargetType="Button"><Setter Property="Padding" Value="12,7"/><Setter Property="Margin" Value="4"/><Setter Property="Background" Value="#252B37"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/></Style>
+    <Style TargetType="TextBox"><Setter Property="Padding" Value="10,7"/><Setter Property="Background" Value="#1D222C"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="#363E4D"/></Style>
+    <Style TargetType="ComboBox"><Setter Property="Padding" Value="8,5"/><Setter Property="Background" Value="#1D222C"/><Setter Property="Foreground" Value="White"/></Style>
+  </Application.Resources>
+</Application>
