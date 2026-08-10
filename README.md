@@ -22,6 +22,10 @@
   <a href="docs/PRIVACY.md">Privacy</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/degenerateearth/MediaShelf/issues/2"><strong>Windows alpha testers wanted — help us test the preview</strong></a>
+</p>
+
 ![MediaShelf home screen](screenshots/MediaShelf-hero.png)
 
 ## A streaming experience for the media you already own
