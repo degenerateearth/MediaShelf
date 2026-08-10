@@ -1,0 +1,31 @@
+name: Windows portable build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['windows/**', '.github/workflows/windows.yml', 'Sources/MediaShelfCore/**']
+  pull_request:
+    paths: ['windows/**', '.github/workflows/windows.yml', 'Sources/MediaShelfCore/**']
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: windows/**/*.csproj
+      - name: Test compatibility contract
+        run: dotnet test windows/MediaShelf.Windows.Tests/MediaShelf.Windows.Tests.csproj -c Release
+      - name: Publish portable x64 app
+        run: dotnet publish windows/MediaShelf.Windows/MediaShelf.Windows.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/MediaShelf-Windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MediaShelf-Windows-x64
+          path: dist/MediaShelf-Windows/MediaShelf.exe
+          if-no-files-found: error

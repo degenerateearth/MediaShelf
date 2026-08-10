@@ -1,0 +1,50 @@
+<Window x:Class="MediaShelf.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MediaShelf" Width="1280" Height="800" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+  <Grid Margin="22">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <DockPanel Grid.Row="0" Margin="0,0,0,18">
+      <StackPanel DockPanel.Dock="Left">
+        <TextBlock Text="MEDIASHELF" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+        <TextBlock Text="Your portable library" Foreground="#9BA3B2"/>
+      </StackPanel>
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button Content="Add folder" Click="AddFolder_Click"/>
+        <Button Content="Refresh" Click="Refresh_Click"/>
+      </StackPanel>
+    </DockPanel>
+    <Grid Grid.Row="1" Margin="0,0,0,16">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="180"/></Grid.ColumnDefinitions>
+      <TextBox x:Name="SearchBox" Grid.Column="0" Margin="0,0,10,0" TextChanged="Filters_Changed" ToolTip="Search title, episode, genre, or year"/>
+      <ComboBox x:Name="FilterBox" Grid.Column="1" Margin="0,0,10,0" SelectionChanged="Filters_Changed" SelectedIndex="0"><ComboBoxItem>All</ComboBoxItem><ComboBoxItem>Movies</ComboBoxItem><ComboBoxItem>TV Shows</ComboBoxItem><ComboBoxItem>Watched</ComboBoxItem><ComboBoxItem>Unwatched</ComboBoxItem><ComboBoxItem>Favorites</ComboBoxItem></ComboBox>
+      <ComboBox x:Name="SortBox" Grid.Column="2" SelectionChanged="Filters_Changed" SelectedIndex="0"><ComboBoxItem>Title</ComboBoxItem><ComboBoxItem>Recently Added</ComboBoxItem><ComboBoxItem>Recently Watched</ComboBoxItem><ComboBoxItem>Year</ComboBoxItem></ComboBox>
+    </Grid>
+    <Grid Grid.Row="2">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+      <ListView x:Name="LibraryList" Grid.Column="0" Background="Transparent" BorderThickness="0" SelectionChanged="LibraryList_SelectionChanged" MouseDoubleClick="Play_Click">
+        <ListView.ItemTemplate><DataTemplate>
+          <Border Background="{StaticResource PanelBrush}" CornerRadius="8" Margin="0,0,10,8" Padding="14">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <StackPanel><TextBlock Text="{Binding DisplayTitle}" FontSize="17" FontWeight="SemiBold"/><TextBlock Text="{Binding CardSubtitle}" Foreground="#AAB1BE" Margin="0,4,0,0"/><TextBlock Text="{Binding ProgressLabel}" Foreground="{StaticResource AccentBrush}" Margin="0,4,0,0"/></StackPanel>
+              <TextBlock Grid.Column="1" Text="{Binding FavoriteGlyph}" Foreground="{StaticResource AccentBrush}" FontSize="23" VerticalAlignment="Center"/>
+            </Grid>
+          </Border>
+        </DataTemplate></ListView.ItemTemplate>
+      </ListView>
+      <Border Grid.Column="1" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="20">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+          <Image x:Name="PosterImage" Height="310" Stretch="Uniform" HorizontalAlignment="Left"/>
+          <TextBlock x:Name="DetailTitle" FontSize="27" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,16,0,5"/>
+          <TextBlock x:Name="DetailMeta" Foreground="#AAB1BE" Margin="0,0,0,14"/>
+          <TextBlock x:Name="DetailSummary" TextWrapping="Wrap" LineHeight="22" Foreground="#D5D8DE"/>
+          <StackPanel Orientation="Horizontal" Margin="0,16,0,8"><Button x:Name="PlayButton" Content="Play" Click="Play_Click"/><Button x:Name="FavoriteButton" Content="Favorite" Click="Favorite_Click"/><Button x:Name="RestartButton" Content="Restart" Click="Restart_Click"/></StackPanel>
+          <TextBlock x:Name="EpisodesHeading" Text="Episodes" FontSize="18" FontWeight="SemiBold" Margin="0,14,0,8" Visibility="Collapsed"/>
+          <ListBox x:Name="EpisodesList" Background="Transparent" Foreground="White" BorderThickness="0" MouseDoubleClick="Play_Click" DisplayMemberPath="Filename"/>
+        </StackPanel></ScrollViewer>
+      </Border>
+    </Grid>
+    <TextBlock x:Name="StatusText" Grid.Row="3" Foreground="#9BA3B2" Margin="0,12,0,0"/>
+  </Grid>
+</Window>

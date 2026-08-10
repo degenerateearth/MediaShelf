@@ -1,4 +1,6 @@
 .build/
+**/bin/
+**/obj/
 .swiftpm/
 dist/
 MediaShelf Data/
