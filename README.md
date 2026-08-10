@@ -15,7 +15,7 @@
 <p align="center">
   <a href="https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf-macOS-Intel.zip"><strong>Download MediaShelf for Intel Mac</strong></a>
   ·
-  <a href="docs/WINDOWS.md">Windows preview</a>
+  <a href="https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf.exe"><strong>Download MediaShelf for Windows</strong></a>
   ·
   <a href="#build-from-source">Build from source</a>
   ·
