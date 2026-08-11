@@ -15,11 +15,15 @@
 <p align="center">
   <a href="https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf-macOS-Intel.zip"><strong>Download MediaShelf for Intel Mac</strong></a>
   ·
-  <a href="docs/WINDOWS.md">Windows preview</a>
+  <a href="https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf.exe"><strong>Download MediaShelf for Windows</strong></a>
   ·
   <a href="#build-from-source">Build from source</a>
   ·
   <a href="docs/PRIVACY.md">Privacy</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/degenerateearth/MediaShelf/issues/2"><strong>Windows alpha testers wanted — help us test the preview</strong></a>
 </p>
 
 ![MediaShelf home screen](screenshots/MediaShelf-hero.png)
