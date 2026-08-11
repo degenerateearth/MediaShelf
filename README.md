@@ -28,6 +28,16 @@
 
 ![MediaShelf home screen](screenshots/MediaShelf-hero.png)
 
+## Screenshots
+
+Click a screen for a closer look.
+
+<p align="center">
+  <a href="screenshots/library-browse.jpg"><img src="screenshots/library-browse.jpg" width="32%" alt="MediaShelf library with Continue Watching, Movies, and TV Shows" /></a>
+  <a href="screenshots/show-detail-dexter.jpg"><img src="screenshots/show-detail-dexter.jpg" width="32%" alt="MediaShelf Dexter show detail and episode list" /></a>
+  <a href="screenshots/show-detail-vikings.jpg"><img src="screenshots/show-detail-vikings.jpg" width="32%" alt="MediaShelf Vikings show detail and episode list" /></a>
+</p>
+
 ## A streaming experience for the media you already own
 
 MediaShelf makes a folder of video files feel like a real living-room product. Point it at your library and it organizes movies, shows, seasons, and episodes into a cinematic interface with artwork, continue watching, automatic next-episode playback, and full Xbox controller navigation.
