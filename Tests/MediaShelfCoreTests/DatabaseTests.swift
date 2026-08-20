@@ -3,6 +3,14 @@ import XCTest
 @testable import MediaShelfCore
 
 final class DatabaseTests: XCTestCase {
+    func testLibraryStorageIsBesideSelectedFolder() {
+        let library = URL(fileURLWithPath: "/Volumes/Movies/Library", isDirectory: true)
+        let paths = PortablePaths(libraryURL: library)
+
+        XCTAssertEqual(paths.root.path, "/Volumes/Movies/MediaShelf Files")
+        XCTAssertEqual(paths.database.path, "/Volumes/Movies/MediaShelf Files/library.sqlite")
+    }
+
     func testIngestPreservesManualMetadataAndProgress() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("MediaShelfTests-\(UUID().uuidString)")

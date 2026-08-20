@@ -7,15 +7,28 @@ public struct PortablePaths: Sendable {
         if let root {
             self.root = root
         } else {
-            let bundleURL = Bundle.main.bundleURL
-            if bundleURL.pathExtension == "app" {
-                self.root = bundleURL
-                    .deletingLastPathComponent()
-                    .appendingPathComponent("MediaShelf Data", isDirectory: true)
-            } else {
-                self.root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                    .appendingPathComponent("MediaShelf Data", isDirectory: true)
-            }
+            self.root = Self.existingAppDataRoot()
+                ?? FileManager.default.temporaryDirectory
+                    .appendingPathComponent("MediaShelf Setup", isDirectory: true)
+        }
+    }
+
+    /// Keeps the database and artwork on the same drive as the selected library.
+    public init(libraryURL: URL) {
+        self.root = libraryURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("MediaShelf Files", isDirectory: true)
+    }
+
+    public static func existingAppDataRoot(bundleURL: URL = Bundle.main.bundleURL) -> URL? {
+        let appParent = bundleURL.pathExtension == "app"
+            ? bundleURL.deletingLastPathComponent()
+            : URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let candidates = ["MediaShelf Files", "MediaShelf Data"].map {
+            appParent.appendingPathComponent($0, isDirectory: true)
+        }
+        return candidates.first {
+            FileManager.default.fileExists(atPath: $0.appendingPathComponent("library.sqlite").path)
         }
     }
 
