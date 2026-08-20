@@ -20,11 +20,11 @@ struct ArtworkMatchReview: Identifiable {
 
 @MainActor
 final class AppState: ObservableObject {
-    let paths: PortablePaths
-    let database: LibraryDatabase
+    private(set) var paths: PortablePaths
+    private(set) var database: LibraryDatabase
     let scanner: MediaScanner
-    let artworkService: ArtworkService
-    let metadataArtworkService: MetadataArtworkService
+    private(set) var artworkService: ArtworkService
+    private(set) var metadataArtworkService: MetadataArtworkService
     let metadataProvider: any MetadataProvider
 
     @Published var libraries: [LibraryFolder] = []
@@ -43,6 +43,7 @@ final class AppState: ObservableObject {
     @Published var artworkReviews: [ArtworkMatchReview] = []
     @Published var automaticArtwork = true
     @Published var sidebarVisibility: NavigationSplitViewVisibility = .detailOnly
+    private var usesSetupStorage: Bool
 
     init(
         paths: PortablePaths = .init(),
@@ -54,6 +55,7 @@ final class AppState: ObservableObject {
         self.artworkService = ArtworkService(paths: paths)
         self.metadataArtworkService = MetadataArtworkService(paths: paths)
         self.metadataProvider = metadataProvider
+        self.usesSetupStorage = PortablePaths.existingAppDataRoot() == nil
     }
 
     var hasLibrary: Bool { !libraries.isEmpty }
@@ -209,6 +211,9 @@ final class AppState: ObservableObject {
         panel.canCreateDirectories = false
         guard panel.runModal() == .OK else { return }
         Task {
+            if let firstURL = panel.urls.first {
+                await configureStorageIfNeeded(for: firstURL)
+            }
             for url in panel.urls {
                 await addLibrary(url)
             }
@@ -223,6 +228,7 @@ final class AppState: ObservableObject {
             activityText = ""
         }
         do {
+            await configureStorageIfNeeded(for: url)
             let bookmark = try? BookmarkAccess.create(for: url)
             let library = LibraryFolder(
                 displayName: url.lastPathComponent,
@@ -234,6 +240,23 @@ final class AppState: ObservableObject {
             await scan(library)
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    private func configureStorageIfNeeded(for libraryURL: URL) async {
+        guard usesSetupStorage, libraries.isEmpty else { return }
+        let libraryPaths = PortablePaths(libraryURL: libraryURL)
+        do {
+            try libraryPaths.prepare()
+            paths = libraryPaths
+            database = LibraryDatabase(paths: libraryPaths)
+            artworkService = ArtworkService(paths: libraryPaths)
+            metadataArtworkService = MetadataArtworkService(paths: libraryPaths)
+            try await database.initialize()
+            automaticArtwork = try await database.setting("automatic_artwork") != "false"
+            usesSetupStorage = false
+        } catch {
+            errorMessage = "MediaShelf could not create its portable data folder beside \(libraryURL.lastPathComponent). \(error.localizedDescription)"
         }
     }
 
@@ -519,10 +542,12 @@ final class AppState: ObservableObject {
         guard let stored else { return nil }
         if FileManager.default.fileExists(atPath: stored) { return stored }
         let normalized = stored.replacingOccurrences(of: "\\", with: "/")
-        if let range = normalized.range(of: "/MediaShelf Data/", options: .caseInsensitive) {
-            let relative = normalized[range.upperBound...].split(separator: "/").map(String.init)
-            let candidate = relative.reduce(paths.root) { $0.appendingPathComponent($1) }
-            if FileManager.default.fileExists(atPath: candidate.path) { return candidate.path }
+        for dataFolder in ["MediaShelf Files", "MediaShelf Data"] {
+            if let range = normalized.range(of: "/\(dataFolder)/", options: .caseInsensitive) {
+                let relative = normalized[range.upperBound...].split(separator: "/").map(String.init)
+                let candidate = relative.reduce(paths.root) { $0.appendingPathComponent($1) }
+                if FileManager.default.fileExists(atPath: candidate.path) { return candidate.path }
+            }
         }
         // Local poster/fanart paths are portable with the media directory even
         // when their last-known absolute path came from Windows.

@@ -83,20 +83,19 @@ The unusual part is what MediaShelf does **not** require: there is no media serv
 ## Download and run
 
 1. Download [`MediaShelf-macOS-Intel.zip`](https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf-macOS-Intel.zip).
-2. Unzip it and copy `MediaShelf.app` to the external drive that will hold your library.
-3. Open MediaShelf and choose one or more media folders.
+2. Unzip it and copy `MediaShelf.app` to the external drive that will hold your library. Do not run it from a mounted installer image.
+3. Open MediaShelf and choose your first media folder.
 4. Let the first scan organize your collection and retrieve artwork.
 
 MediaShelf currently targets **Intel Macs running macOS 13 or newer**. This community build is ad-hoc signed rather than Apple-notarized, so macOS may require a right-click → **Open** on first launch. Never eject the drive while MediaShelf is running; quit the app first.
 
 ## Portable layout
 
-On first launch, MediaShelf creates its data folder beside the app:
+When you choose the first media folder, MediaShelf creates its data folder beside that folder. The database, artwork, playback progress, settings, and backups therefore stay on the same external drive as the library.
 
 ```text
 External Drive/
-├── MediaShelf.app
-├── MediaShelf Data/
+├── MediaShelf Files/
 │   ├── library.sqlite
 │   ├── Artwork/
 │   ├── Backups/
@@ -104,7 +103,8 @@ External Drive/
 │   ├── Playback/
 │   ├── Settings/
 │   └── Thumbnails/
-└── Movies & TV/
+├── Movies & TV/
+└── MediaShelf.app
 ```
 
 Security-scoped bookmarks grant access only to folders you select. If macOS invalidates a bookmark after moving the drive to another Mac, select the same folder again; the portable database and playback history remain intact.

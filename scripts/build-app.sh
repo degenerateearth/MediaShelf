@@ -3,6 +3,7 @@ set -eu
 
 PROJECT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 APP_DIR="$PROJECT_DIR/dist/MediaShelf.app"
+ARCHIVE_PATH="$PROJECT_DIR/dist/MediaShelf-macOS-Intel.zip"
 CONTENTS_DIR="$APP_DIR/Contents"
 EXECUTABLE="$PROJECT_DIR/.build/x86_64-apple-macosx/release/MediaShelf"
 SHADER_SOURCE="$PROJECT_DIR/Vendor/KSPlayer/KSPlayer/Metal/Shaders.metal"
@@ -24,7 +25,10 @@ cp "$PROJECT_DIR/Vendor/KSPlayer/LICENSE" "$CONTENTS_DIR/Resources/KSPlayer-LICE
 cp "$PROJECT_DIR/.build/checkouts/FFmpegKit/LICENSE" "$CONTENTS_DIR/Resources/FFmpegKit-LICENSE.txt"
 chmod 755 "$CONTENTS_DIR/MacOS/MediaShelf"
 
-codesign --force --deep --sign - "$APP_DIR"
+codesign --force --deep --sign "${CODE_SIGN_IDENTITY:--}" "$APP_DIR"
 codesign --verify --deep --strict "$APP_DIR"
+rm -f "$ARCHIVE_PATH"
+ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$ARCHIVE_PATH"
 file "$CONTENTS_DIR/MacOS/MediaShelf"
 echo "$APP_DIR"
+echo "$ARCHIVE_PATH"
