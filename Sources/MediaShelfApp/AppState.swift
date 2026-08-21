@@ -253,6 +253,7 @@ final class AppState: ObservableObject {
             artworkService = ArtworkService(paths: libraryPaths)
             metadataArtworkService = MetadataArtworkService(paths: libraryPaths)
             try await database.initialize()
+            try PortablePaths.rememberAppDataRoot(libraryPaths.root)
             automaticArtwork = try await database.setting("automatic_artwork") != "false"
             usesSetupStorage = false
         } catch {
