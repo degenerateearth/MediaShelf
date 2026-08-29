@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=MediaShelf
+Comment=Your movies. Your drive. Your private streaming service.
+Exec=mediashelf
+Icon=mediashelf
+Terminal=false
+Categories=AudioVideo;Video;Player;
+StartupNotify=true
+StartupWMClass=earth.degenerate.MediaShelf
