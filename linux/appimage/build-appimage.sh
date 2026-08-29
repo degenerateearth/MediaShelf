@@ -21,6 +21,7 @@ mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/lib/$PYTHON_VERSION/dist-packages" \
     "$TOOLS" "$OUTPUT_DIR"
 
 install -m 0755 /usr/bin/python3 "$APPDIR/usr/bin/python3"
+install -m 0755 "$ROOT/linux/appimage/mediashelf-launcher" "$APPDIR/usr/bin/mediashelf"
 cp -a "/usr/lib/$PYTHON_VERSION" "$APPDIR/usr/lib/"
 rm -rf "$APPDIR/usr/lib/$PYTHON_VERSION/dist-packages"
 mkdir -p "$APPDIR/usr/lib/$PYTHON_VERSION/dist-packages"
@@ -45,7 +46,8 @@ GI_EXTENSION="$(find "$APPDIR/usr/lib/$PYTHON_VERSION/dist-packages/gi" -maxdept
 test -n "$GI_EXTENSION" || { echo "PyGObject extension was not found" >&2; exit 3; }
 export APPIMAGE_EXTRACT_AND_RUN=1 DEPLOY_GTK_VERSION=3
 "$TOOLS/linuxdeploy-x86_64.AppImage" --appdir "$APPDIR" \
-    --executable "$APPDIR/usr/bin/python3" --library "$GI_EXTENSION" \
+    --executable "$APPDIR/usr/bin/python3" --executable "$APPDIR/usr/bin/mediashelf" \
+    --library "$GI_EXTENSION" \
     --desktop-file "$APPDIR/usr/share/applications/MediaShelf.desktop" \
     --icon-file "$APPDIR/usr/share/icons/hicolor/512x512/apps/mediashelf.png" --plugin gtk
 
