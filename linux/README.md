@@ -22,7 +22,7 @@ sudo apt install python3 python3-gi gir1.2-gtk-3.0 celluloid ffmpegthumbnailer
 
 ```sh
 cd linux
-./mediashelf
+sh ./mediashelf
 ```
 
 Choose a media folder when prompted. MediaShelf creates `MediaShelf Data`
@@ -33,7 +33,7 @@ playback state there.
 
 ```sh
 cd linux
-./INSTALL.sh
+sh ./INSTALL.sh
 ```
 
 The installer copies the app to `~/.local/opt/mediashelf`, adds a desktop entry
