@@ -17,9 +17,10 @@ The supported release target is currently:
 - Intel Mac (`x86_64`)
 - macOS 13 or newer
 
-Apple Silicon and Windows are not currently supported release platforms. See
+Apple Silicon, Windows, and Linux are not currently supported release platforms. See
 [`docs/APPLE_SILICON_PLAN.md`](docs/APPLE_SILICON_PLAN.md) for the staged Apple
-Silicon plan.
+Silicon plan. The Windows and Linux directories contain preview implementations
+with their own validation workflows and documentation.
 
 Development uses Swift Package Manager; there is no checked-in Xcode project.
 You need:
@@ -298,6 +299,7 @@ it” is not a substitute for reasoning, validation, or maintainership.
 - codec, audio-track, and subtitle compatibility;
 - scanning, artwork, database, and large-library performance work;
 - narrowly scoped research toward a possible future Windows port.
+- focused fixes and validation for the Linux GTK preview.
 
 A Windows port is exploratory work, not a currently supported target. Begin with
 an issue that separates reusable `MediaShelfCore` concepts from macOS-specific

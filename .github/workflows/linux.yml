@@ -1,0 +1,25 @@
+name: Linux preview checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['linux/**', '.github/workflows/linux.yml']
+  pull_request:
+    paths: ['linux/**', '.github/workflows/linux.yml']
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install validation tools
+        run: sudo apt-get update && sudo apt-get install -y desktop-file-utils
+      - name: Compile Python source
+        run: python3 -m py_compile linux/mediashelf.py
+      - name: Validate shell scripts
+        run: sh -n linux/mediashelf linux/INSTALL.sh
+      - name: Validate desktop entry
+        run: desktop-file-validate linux/MediaShelf.desktop

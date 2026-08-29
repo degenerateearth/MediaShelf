@@ -19,3 +19,5 @@ work/
 work-*.png
 .tools/
 .DS_Store
+__pycache__/
+*.py[cod]
