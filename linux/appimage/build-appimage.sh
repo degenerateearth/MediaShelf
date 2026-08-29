@@ -27,10 +27,11 @@ mkdir -p "$APPDIR/usr/lib/$PYTHON_VERSION/dist-packages"
 cp -a /usr/lib/python3/dist-packages/gi "$APPDIR/usr/lib/$PYTHON_VERSION/dist-packages/"
 install -m 0644 "$ROOT/linux/mediashelf.py" "$APPDIR/usr/share/mediashelf/mediashelf.py"
 install -m 0644 "$ROOT/linux/MediaShelf.desktop" "$APPDIR/usr/share/applications/MediaShelf.desktop"
-install -m 0644 "$ROOT/linux/Resources/AppIcon.png" "$APPDIR/usr/share/icons/hicolor/512x512/apps/mediashelf.png"
+convert "$ROOT/linux/Resources/AppIcon.png" -resize 512x512 \
+    "$APPDIR/usr/share/icons/hicolor/512x512/apps/mediashelf.png"
 install -m 0644 "$ROOT/linux/appimage/earth.degenerate.MediaShelf.metainfo.xml" "$APPDIR/usr/share/metainfo/earth.degenerate.MediaShelf.metainfo.xml"
 cp "$ROOT/linux/MediaShelf.desktop" "$APPDIR/MediaShelf.desktop"
-cp "$ROOT/linux/Resources/AppIcon.png" "$APPDIR/mediashelf.png"
+cp "$APPDIR/usr/share/icons/hicolor/512x512/apps/mediashelf.png" "$APPDIR/mediashelf.png"
 
 curl --fail --location --retry 3 --output "$TOOLS/linuxdeploy-x86_64.AppImage" \
     https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
