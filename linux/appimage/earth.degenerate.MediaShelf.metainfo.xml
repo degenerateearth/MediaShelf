@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>earth.degenerate.MediaShelf</id>
+  <name>MediaShelf</name>
+  <summary>Your movies, your drive, your private streaming service</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>MediaShelf indexes movies and television stored on your own drives. It keeps the library local and never moves, renames, rewrites, or uploads media.</p>
+  </description>
+  <launchable type="desktop-id">MediaShelf.desktop</launchable>
+  <url type="homepage">https://github.com/degenerateearth/MediaShelf</url>
+  <provides><binary>mediashelf</binary></provides>
+</component>

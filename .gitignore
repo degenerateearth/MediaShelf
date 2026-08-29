@@ -21,3 +21,6 @@ work-*.png
 .DS_Store
 __pycache__/
 *.py[cod]
+build/
+squashfs-root/
+appimage-smoke.log
