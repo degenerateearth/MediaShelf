@@ -1,6 +1,8 @@
 import Foundation
 
 public struct PortablePaths: Sendable {
+    private static let storedAppDataRootKey = "MediaShelf.appDataRootBookmark"
+
     public let root: URL
 
     public init(root: URL? = nil) {
@@ -20,7 +22,18 @@ public struct PortablePaths: Sendable {
             .appendingPathComponent("MediaShelf Files", isDirectory: true)
     }
 
-    public static func existingAppDataRoot(bundleURL: URL = Bundle.main.bundleURL) -> URL? {
+    public static func existingAppDataRoot(
+        bundleURL: URL = Bundle.main.bundleURL,
+        defaults: UserDefaults = .standard
+    ) -> URL? {
+        if let bookmark = defaults.data(forKey: storedAppDataRootKey),
+           let resolved = try? BookmarkAccess.resolve(bookmark).url,
+           FileManager.default.fileExists(
+               atPath: resolved.appendingPathComponent("library.sqlite").path
+           ) {
+            return resolved
+        }
+
         let appParent = bundleURL.pathExtension == "app"
             ? bundleURL.deletingLastPathComponent()
             : URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -30,6 +43,13 @@ public struct PortablePaths: Sendable {
         return candidates.first {
             FileManager.default.fileExists(atPath: $0.appendingPathComponent("library.sqlite").path)
         }
+    }
+
+    public static func rememberAppDataRoot(
+        _ root: URL,
+        defaults: UserDefaults = .standard
+    ) throws {
+        defaults.set(try BookmarkAccess.create(for: root), forKey: storedAppDataRootKey)
     }
 
     public var database: URL { root.appendingPathComponent("library.sqlite") }
