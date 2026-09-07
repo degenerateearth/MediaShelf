@@ -30,6 +30,10 @@ public sealed class MediaItem
     public string CardSubtitle => Kind == "episode"
         ? $"Season {SeasonNumber ?? 0} · {EpisodeCountLabel}"
         : Year?.ToString() ?? "Movie";
+    public string SectionTitle => Kind == "episode" ? "TV Shows" : "Movies";
+    public string? ResolvedPosterPath { get; set; }
+    public string EpisodeLabel => $"S{SeasonNumber ?? 0:00} E{EpisodeNumber ?? 0:00}  ·  {EpisodeTitle ?? Filename}";
+    public double ProgressPercent => Runtime > 0 ? Math.Clamp(PlaybackPosition / Runtime.Value * 100, 0, 100) : 0;
     public string EpisodeCountLabel { get; set; } = "TV Show";
     public string FavoriteGlyph => IsFavorite ? "★" : "☆";
     public string ProgressLabel => IsWatched ? "Watched" : PlaybackPosition > 0 ? $"Resume at {TimeSpan.FromSeconds(PlaybackPosition):h\\:mm\\:ss}" : "";

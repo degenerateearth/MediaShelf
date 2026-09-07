@@ -79,6 +79,8 @@ public sealed class LibraryDatabase
     }
 
     public void SetFavorite(string id, bool value) => Update("UPDATE media_items SET is_favorite=$value WHERE id=$id", id, ("$value", value ? 1 : 0));
+    public void ApplyProviderMetadata(string id, string? summary, string? genre, int? year) => Update("UPDATE media_items SET summary=COALESCE(summary,$summary),genre=COALESCE(genre,$genre),year=COALESCE(year,$year) WHERE id=$id", id, ("$summary", summary ?? (object)DBNull.Value), ("$genre", genre ?? (object)DBNull.Value), ("$year", year ?? (object)DBNull.Value));
+    public void SetArtwork(string id, string role, string path) => Update(role == "poster" ? "UPDATE media_items SET poster_path=COALESCE(poster_path,$path) WHERE id=$id AND manual_poster=0" : "UPDATE media_items SET backdrop_path=COALESCE(backdrop_path,$path) WHERE id=$id AND manual_backdrop=0", id, ("$path", path));
     public void Restart(string id) => Update("UPDATE media_items SET playback_position=0,is_watched=0 WHERE id=$id", id);
     public void UpdateProgress(string id, double position, double duration)
     {
