@@ -15,17 +15,9 @@
 <p align="center">
   <a href="https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf-macOS-Intel.zip"><strong>Download MediaShelf for Intel Mac</strong></a>
   ·
-  <a href="https://github.com/degenerateearth/MediaShelf/releases/latest/download/MediaShelf.exe"><strong>Download MediaShelf for Windows</strong></a>
-  ·
-  <a href="linux/README.md"><strong>Linux AppImage</strong></a>
-  ·
   <a href="#build-from-source">Build from source</a>
   ·
   <a href="docs/PRIVACY.md">Privacy</a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/degenerateearth/MediaShelf/issues/2"><strong>Windows alpha testers wanted — help us test the preview</strong></a>
 </p>
 
 ![MediaShelf home screen](screenshots/MediaShelf-hero.png)
@@ -140,13 +132,6 @@ swift test --arch x86_64
 
 The packaged application is written to `dist/MediaShelf.app`. The build downloads FFmpegKit through Swift Package Manager and embeds the required playback components into the app bundle.
 
-### Linux portable AppImage
-
-An early GTK 3 edition with portable AppImage packaging for 64-bit Linux Mint
-and Ubuntu-family distributions lives in [`linux/`](linux/README.md). It uses
-system Celluloid for playback and can also run directly from a checkout or
-install for the current user without root access.
-
 ## Project principles
 
 1. **Local first.** Playback and library management must work without an account or server.
@@ -160,8 +145,6 @@ install for the current user without root access.
 - [Contributing](CONTRIBUTING.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Apple Silicon support plan](docs/APPLE_SILICON_PLAN.md)
-- [Windows portable preview](docs/WINDOWS.md)
-- [Linux GTK preview](linux/README.md)
 - [Playback](docs/PLAYBACK.md)
 - [Portable storage](docs/PORTABILITY.md)
 - [Privacy and online artwork](docs/PRIVACY.md)

@@ -505,9 +505,9 @@ final class AppState: ObservableObject {
 
     func reload() async throws {
         libraries = try await database.libraries()
-        // `absolute_path` is deliberately only a last-known location. A Windows
-        // scan may have written a drive-letter path, so always prefer the current
-        // Mac library root plus the portable relative path when it exists.
+        // `absolute_path` is deliberately only a last-known location. Always
+        // prefer the current Mac library root plus the portable relative path
+        // when it exists.
         let roots = Dictionary(uniqueKeysWithValues: libraries.compactMap { library in
             let root: URL
             if let bookmark = library.bookmark,
@@ -550,7 +550,7 @@ final class AppState: ObservableObject {
             }
         }
         // Local poster/fanart paths are portable with the media directory even
-        // when their last-known absolute path came from Windows.
+        // when their last-known absolute path is stale.
         let beside = URL(fileURLWithPath: mediaPath)
             .deletingLastPathComponent()
             .appendingPathComponent(URL(fileURLWithPath: stored).lastPathComponent)
