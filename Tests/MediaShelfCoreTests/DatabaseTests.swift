@@ -11,6 +11,40 @@ final class DatabaseTests: XCTestCase {
         XCTAssertEqual(paths.database.path, "/Volumes/Movies/MediaShelf Files/library.sqlite")
     }
 
+    func testRememberedAppDataRootSurvivesRelaunchAwayFromAppBundle() throws {
+        let testRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MediaShelfRememberedRoot-\(UUID().uuidString)")
+        let appBundle = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SomewhereElse/MediaShelf.app")
+        let suiteName = "MediaShelfTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+            try? FileManager.default.removeItem(at: testRoot)
+        }
+
+        try FileManager.default.createDirectory(
+            at: testRoot,
+            withIntermediateDirectories: true
+        )
+        XCTAssertTrue(
+            FileManager.default.createFile(
+                atPath: testRoot.appendingPathComponent("library.sqlite").path,
+                contents: Data()
+            )
+        )
+
+        try PortablePaths.rememberAppDataRoot(testRoot, defaults: defaults)
+
+        let restored = try XCTUnwrap(
+            PortablePaths.existingAppDataRoot(bundleURL: appBundle, defaults: defaults)
+        )
+        XCTAssertEqual(
+            restored.resolvingSymlinksInPath().standardizedFileURL.path,
+            testRoot.resolvingSymlinksInPath().standardizedFileURL.path
+        )
+    }
+
     func testIngestPreservesManualMetadataAndProgress() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("MediaShelfTests-\(UUID().uuidString)")

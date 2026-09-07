@@ -21,8 +21,10 @@ struct MediaShelfApp: App {
         Window("MediaShelf", id: "main") {
             ContentView(appState: appState, controller: controller)
                 .frame(minWidth: 960, minHeight: 640)
+                .background(FullscreenWindowGuard().frame(width: 0, height: 0))
         }
         .defaultSize(width: 1600, height: 900)
+        .windowResizability(.contentMinSize)
         .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(replacing: .newItem) {}
