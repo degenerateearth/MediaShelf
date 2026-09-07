@@ -42,10 +42,20 @@ It is self-contained: users do not need to install .NET, VLC, or a codec pack.
 The executable securely extracts its embedded native playback components into
 the current user's temporary application cache when launched.
 
+After each scan, Windows automatically attempts the same exact-title/year
+Cinemeta artwork match used by the Mac app. Matching posters and backdrops are
+cached under `MediaShelf Data/Artwork`; manual artwork and ambiguous matches are
+left untouched. A failed or offline lookup never prevents scanning or playback.
+
+Use **Get Missing Artwork** in the navigation panel to retry artwork for any
+items that remain incomplete. The action reports completion in the status bar;
+it never replaces manually selected artwork.
+
 ## Current gaps
 
-- Online automatic artwork matching and the visual match chooser are not yet
-  exposed in the Windows UI. Existing portable artwork is displayed.
+- Automatic artwork matching runs after scans using the same conservative
+  exact-title/year Cinemeta match as Mac. Posters and backdrops are cached in
+  `MediaShelf Data/Artwork`, preserve manual artwork, and remain available offline.
 - Manual metadata/artwork editing and controller navigation need Windows UI.
 - Windows ARM64 is not built.
 - The binary is unsigned; Windows SmartScreen may warn on first launch.
